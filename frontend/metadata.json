@@ -1,0 +1,5 @@
+{
+  "name": "MarkBridge Parsing Workspace",
+  "description": "A high-fidelity parsing inspection dashboard for document processing pipelines, featuring source selection, trace timelines, and real-time validation triage.",
+  "requestFramePermissions": []
+}

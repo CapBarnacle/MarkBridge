@@ -1,0 +1,10 @@
+.env
+frontend/.env.local
+.pytest_cache/
+.markbridge/logs/
+.markbridge/runs/*
+!.markbridge/runs/.gitkeep
+.vscode/
+.codex/
+__pycache__/
+*.pyc
