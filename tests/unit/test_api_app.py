@@ -1,8 +1,9 @@
 import importlib
 from datetime import datetime, timezone
 
-from markbridge.api.models import RepairCandidateResponse, s3_object_option_from_domain
+from markbridge.api.models import RepairCandidateResponse, runtime_status_from_domain, s3_object_option_from_domain
 from markbridge.api.storage import S3ObjectOption
+from markbridge.routing.runtime import RuntimeParserStatus
 from markbridge.shared.ir import DocumentFormat
 
 app_module = importlib.import_module("markbridge.api.app")
@@ -76,3 +77,21 @@ def test_repair_candidate_serialization_is_ui_ready() -> None:
     assert dumped["normalized_math"] == "q_{x+t} l"
     assert dumped["llm_recommended"] is True
     assert dumped["patch_proposal"]["markdown_line_number"] == 41
+
+
+def test_runtime_status_serialization_exposes_route_metadata() -> None:
+    response = runtime_status_from_domain(
+        RuntimeParserStatus(
+            parser_id="antiword",
+            installed=True,
+            enabled=True,
+            reason=None,
+            supported_formats=(DocumentFormat.DOC,),
+            route_kind="degraded_fallback",
+        )
+    )
+
+    dumped = response.model_dump(mode="json")
+    assert dumped["parser_id"] == "antiword"
+    assert dumped["supported_formats"] == ["doc"]
+    assert dumped["route_kind"] == "degraded_fallback"

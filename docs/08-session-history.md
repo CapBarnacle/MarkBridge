@@ -108,6 +108,7 @@ Important note:
   - DOC: `libreoffice` conversion route plus `antiword` text fallback scaffold exist, but current runtime still lacks the required system tools
   - HWP: `hwp5txt` text-route scaffold now exists, but current runtime still lacks the command so execution remains `hold`
 - `preferred_markdown` handling now carries explicit Markdown line numbers so preview highlight mapping is more stable.
+- Runtime status surfaces now expose `supported_formats` and `route_kind`, so `antiword` degraded fallback and `hwp5txt` text-route status are visible in both API and CLI output.
 - API responses now include:
   - `repair_candidates`
   - `suggested_resolved_markdown`

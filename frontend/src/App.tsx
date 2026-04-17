@@ -636,9 +636,13 @@ function RuntimePanel(props: {runtime: RuntimeParserStatus[]; apiBase: string; c
       <div className="runtime-list">
         {props.runtime.map((item) => (
           <div key={item.parser_id} className="runtime-row">
-            <div>
+            <div className="runtime-copy">
               <strong>{item.parser_id}</strong>
               <span>{item.reason || 'available'}</span>
+              <div className="runtime-tags">
+                <span className="runtime-tag">{humanizeRouteKind(item.route_kind)}</span>
+                <span className="runtime-tag">{humanizeSupportedFormats(item.supported_formats)}</span>
+              </div>
             </div>
             <span className={item.enabled ? 'runtime-badge runtime-badge-on' : 'runtime-badge'}>{item.enabled ? 'enabled' : 'off'}</span>
           </div>
@@ -1783,6 +1787,23 @@ function summarizeEvaluationTone(label: string) {
     return 'warning';
   }
   return 'error';
+}
+
+function humanizeRouteKind(value: string) {
+  if (value === 'degraded_fallback') {
+    return 'degraded fallback';
+  }
+  if (value === 'text_route') {
+    return 'text route';
+  }
+  return value.replaceAll('_', ' ');
+}
+
+function humanizeSupportedFormats(formats: string[]) {
+  if (formats.length === 0) {
+    return 'format: n/a';
+  }
+  return `format: ${formats.join(', ')}`;
 }
 
 function humanizeEvaluationLabel(label: string) {

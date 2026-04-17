@@ -68,6 +68,8 @@ def main() -> None:
                     "installed": status.installed,
                     "enabled": status.enabled,
                     "reason": status.reason,
+                    "supported_formats": [item.value for item in status.supported_formats],
+                    "route_kind": status.route_kind,
                 }
                 for parser_id, status in get_runtime_statuses().items()
             }

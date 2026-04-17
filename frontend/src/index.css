@@ -859,8 +859,31 @@
     padding: 0.85rem 0.9rem;
   }
 
+  .runtime-copy {
+    min-width: 0;
+  }
+
   .runtime-row span {
     color: rgba(226, 235, 245, 0.7);
+  }
+
+  .runtime-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.5rem;
+  }
+
+  .runtime-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(235, 241, 247, 0.78);
+    font-size: 0.69rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
   .runtime-badge {

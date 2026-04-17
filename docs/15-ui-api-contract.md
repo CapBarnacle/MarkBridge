@@ -29,11 +29,19 @@ GET /v1/runtime-status
       "parser_id": "docling",
       "installed": true,
       "enabled": true,
-      "reason": null
+      "reason": null,
+      "supported_formats": ["pdf"],
+      "route_kind": "primary"
     }
   ]
 }
 ```
+
+### Response Notes
+- `supported_formats`: 이 parser/tool 이 현재 runtime에서 담당하는 문서 포맷 목록
+- `route_kind`: `primary`, `fallback`, `secondary`, `degraded_fallback`, `text_route`, `experimental` 중 하나
+- `degraded_fallback` 는 품질 저하를 감수하는 legacy fallback 을 의미한다. 현재 `antiword` 가 여기에 해당한다.
+- `text_route` 는 구조 fidelity 가 아니라 text extraction 중심의 경로를 의미한다. 현재 `hwp5txt` 가 여기에 해당한다.
 
 ## 2. S3 Object List
 S3 콤보박스와 검색형 선택 UI는 이 API를 기준으로 연결한다.

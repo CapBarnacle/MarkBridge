@@ -44,6 +44,8 @@ class RuntimeParserStatusResponse(BaseModel):
     installed: bool
     enabled: bool
     reason: str | None = None
+    supported_formats: list[DocumentFormat] = Field(default_factory=list)
+    route_kind: str = "primary"
 
 
 class RuntimeStatusResponse(BaseModel):
@@ -414,6 +416,8 @@ def runtime_status_from_domain(status: RuntimeParserStatus) -> RuntimeParserStat
         installed=status.installed,
         enabled=status.enabled,
         reason=status.reason,
+        supported_formats=list(status.supported_formats),
+        route_kind=status.route_kind,
     )
 
 

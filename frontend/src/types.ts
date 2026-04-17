@@ -3,6 +3,8 @@ export type RuntimeParserStatus = {
   installed: boolean;
   enabled: boolean;
   reason: string | null;
+  supported_formats: string[];
+  route_kind: string;
 };
 
 export type RuntimeStatusResponse = {

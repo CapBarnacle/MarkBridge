@@ -14,6 +14,8 @@ Runtime status answers:
 - `installed`: whether the dependency is present in the current environment
 - `enabled`: whether project policy currently allows routing to use it
 - `reason`: why a parser is unavailable or disabled
+- `supported_formats`: which document formats this parser/tool can currently serve
+- `route_kind`: route role such as `primary`, `fallback`, `secondary`, `degraded_fallback`, `text_route`, or `experimental`
 
 ## Current Environment Snapshot
 
@@ -66,3 +68,17 @@ It does not yet support the intended `.doc` conversion route or any active HWP r
 Current status was derived from:
 - Python import availability for package-based parsers
 - shell command discovery for system tools such as `libreoffice`, `soffice`, `antiword`, and `hwp5txt`
+
+## API / CLI Surface
+`GET /v1/runtime-status` and `python3 -m markbridge.cli runtime-status` now expose the same extra route metadata:
+
+```json
+{
+  "parser_id": "antiword",
+  "installed": false,
+  "enabled": false,
+  "reason": "text fallback route not available",
+  "supported_formats": ["doc"],
+  "route_kind": "degraded_fallback"
+}
+```

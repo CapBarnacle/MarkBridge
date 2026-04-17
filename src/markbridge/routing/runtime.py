@@ -17,6 +17,8 @@ class RuntimeParserStatus:
     installed: bool
     enabled: bool
     reason: str | None = None
+    supported_formats: tuple[DocumentFormat, ...] = ()
+    route_kind: str = "primary"
 
 
 def _has_module(name: str) -> bool:
@@ -39,39 +41,71 @@ def get_runtime_statuses() -> dict[str, RuntimeParserStatus]:
             docling_installed,
             docling_installed,
             None if docling_installed else "not installed",
+            supported_formats=(DocumentFormat.PDF,),
+            route_kind="primary",
         ),
         "pdfplumber": RuntimeParserStatus(
             "pdfplumber",
             pdfplumber_installed,
             False,
             "secondary candidate not enabled by policy" if pdfplumber_installed else "not installed",
+            supported_formats=(DocumentFormat.PDF,),
+            route_kind="secondary",
         ),
-        "pypdf": RuntimeParserStatus("pypdf", pypdf_installed, pypdf_installed, None if pypdf_installed else "not installed"),
-        "python-docx": RuntimeParserStatus("python-docx", docx_installed, docx_installed, None if docx_installed else "not installed"),
-        "openpyxl": RuntimeParserStatus("openpyxl", openpyxl_installed, openpyxl_installed, None if openpyxl_installed else "not installed"),
+        "pypdf": RuntimeParserStatus(
+            "pypdf",
+            pypdf_installed,
+            pypdf_installed,
+            None if pypdf_installed else "not installed",
+            supported_formats=(DocumentFormat.PDF,),
+            route_kind="fallback",
+        ),
+        "python-docx": RuntimeParserStatus(
+            "python-docx",
+            docx_installed,
+            docx_installed,
+            None if docx_installed else "not installed",
+            supported_formats=(DocumentFormat.DOCX,),
+            route_kind="primary",
+        ),
+        "openpyxl": RuntimeParserStatus(
+            "openpyxl",
+            openpyxl_installed,
+            openpyxl_installed,
+            None if openpyxl_installed else "not installed",
+            supported_formats=(DocumentFormat.XLSX,),
+            route_kind="primary",
+        ),
         "markitdown": RuntimeParserStatus(
             "markitdown",
             markitdown_installed,
             False,
             "experimental candidate" if markitdown_installed else "not installed",
+            route_kind="experimental",
         ),
         "libreoffice": RuntimeParserStatus(
             "libreoffice",
             libreoffice_installed,
             libreoffice_installed,
             "conversion route not available" if not libreoffice_installed else None,
+            supported_formats=(DocumentFormat.DOC,),
+            route_kind="primary",
         ),
         "antiword": RuntimeParserStatus(
             "antiword",
             antiword_installed,
             antiword_installed,
             "text fallback route not available" if not antiword_installed else None,
+            supported_formats=(DocumentFormat.DOC,),
+            route_kind="degraded_fallback",
         ),
         "hwp5txt": RuntimeParserStatus(
             "hwp5txt",
             hwp5txt_installed,
             hwp5txt_installed,
             "HWP text route not available" if not hwp5txt_installed else None,
+            supported_formats=(DocumentFormat.HWP,),
+            route_kind="text_route",
         ),
     }
 
