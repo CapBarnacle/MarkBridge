@@ -31,6 +31,8 @@ def get_runtime_statuses() -> dict[str, RuntimeParserStatus]:
     openpyxl_installed = _has_module("openpyxl")
     markitdown_installed = _has_module("markitdown")
     libreoffice_installed = shutil.which("libreoffice") is not None or shutil.which("soffice") is not None
+    antiword_installed = shutil.which("antiword") is not None
+    hwp5txt_installed = shutil.which("hwp5txt") is not None
     return {
         "docling": RuntimeParserStatus(
             "docling",
@@ -59,6 +61,18 @@ def get_runtime_statuses() -> dict[str, RuntimeParserStatus]:
             libreoffice_installed,
             "conversion route not available" if not libreoffice_installed else None,
         ),
+        "antiword": RuntimeParserStatus(
+            "antiword",
+            antiword_installed,
+            antiword_installed,
+            "text fallback route not available" if not antiword_installed else None,
+        ),
+        "hwp5txt": RuntimeParserStatus(
+            "hwp5txt",
+            hwp5txt_installed,
+            hwp5txt_installed,
+            "HWP text route not available" if not hwp5txt_installed else None,
+        ),
     }
 
 
@@ -68,8 +82,8 @@ def executable_candidates_for_format(document_format: DocumentFormat) -> tuple[s
         DocumentFormat.PDF: ("docling", "pypdf"),
         DocumentFormat.DOCX: ("python-docx",),
         DocumentFormat.XLSX: ("openpyxl",),
-        DocumentFormat.DOC: ("libreoffice",),
-        DocumentFormat.HWP: (),
+        DocumentFormat.DOC: ("libreoffice", "antiword"),
+        DocumentFormat.HWP: ("hwp5txt",),
     }
     return tuple(
         parser_id
@@ -123,6 +137,12 @@ def choose_route(
     elif report.document_format is DocumentFormat.DOC and statuses["libreoffice"].enabled:
         parser_id = "libreoffice"
         rationale.append("LibreOffice conversion route is enabled.")
+    elif report.document_format is DocumentFormat.DOC and statuses["antiword"].enabled:
+        parser_id = "antiword"
+        rationale.append("antiword text fallback route is enabled.")
+    elif report.document_format is DocumentFormat.HWP and statuses["hwp5txt"].enabled:
+        parser_id = "hwp5txt"
+        rationale.append("hwp5txt text route is enabled.")
 
     level = RouteLevel.DETERMINISTIC_ONLY
     llm_usage = LlmUsageMode.ROUTING if llm_used else LlmUsageMode.NONE

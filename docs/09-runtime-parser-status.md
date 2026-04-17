@@ -30,7 +30,8 @@ Runtime status answers:
 | openpyxl | XLSX | true | true | primary | enabled default XLSX structural parser |
 | xlsx2csv | XLSX | false | false | experimental | not installed in current environment |
 | LibreOffice headless | DOC | false | false | primary | `libreoffice` / `soffice` command not present |
-| antiword | DOC | false | false | degraded fallback | command not present |
+| antiword | DOC | false | false | degraded fallback | command not present, but runtime scaffold now exists |
+| hwp5txt | HWP | false | false | text route | command not present, but runtime scaffold now exists |
 | olefile | DOC | true | false | experimental | installed but not enabled as an active parsing route |
 | Unstructured | multi-format | false | false | experimental | not installed in current environment |
 | MarkItDown | multi-format | true | false | experimental | installed but not enabled in the active route set |
@@ -39,8 +40,8 @@ Runtime status answers:
 - PDF: `docling`, with `pypdf` kept available as a deterministic fallback
 - DOCX: `python-docx`
 - XLSX: `openpyxl`
-- DOC: no enabled primary route at the moment
-- HWP: no enabled route
+- DOC: no enabled primary route at the moment, but `antiword` fallback can activate when installed
+- HWP: no enabled route in the current runtime, but `hwp5txt` can activate when installed
 
 This means the current environment can support deterministic parsing for:
 - DOCX
@@ -48,7 +49,7 @@ This means the current environment can support deterministic parsing for:
 - high-fidelity PDF paths via `docling`
 - simple fallback PDF paths via `pypdf`
 
-It does not yet support the intended `.doc` conversion route or any active HWP route.
+It does not yet support the intended `.doc` conversion route or any active HWP route in this specific runtime snapshot.
 
 ## Current Policy
 - Routing should consider only parsers with `installed = true` and `enabled = true`.
@@ -64,4 +65,4 @@ It does not yet support the intended `.doc` conversion route or any active HWP r
 ## Detection Basis
 Current status was derived from:
 - Python import availability for package-based parsers
-- shell command discovery for system tools such as `libreoffice`, `soffice`, and `antiword`
+- shell command discovery for system tools such as `libreoffice`, `soffice`, `antiword`, and `hwp5txt`

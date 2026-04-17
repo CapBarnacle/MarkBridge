@@ -1140,13 +1140,25 @@
   }
 
   .markdown-line-selected {
-    background: rgba(244, 226, 170, 0.9);
-    box-shadow: inset 0 0 0 1px rgba(203, 158, 52, 0.42);
+    box-shadow: inset 0 0 0 1px rgba(203, 158, 52, 0.52);
   }
 
   .markdown-line-resolved {
     background: rgba(227, 239, 247, 0.85);
     box-shadow: inset 0 0 0 1px rgba(120, 168, 205, 0.35);
+  }
+
+  .markdown-line-history {
+    background: rgba(252, 245, 228, 0.42);
+  }
+
+  .markdown-line-residue {
+    background: rgba(251, 229, 233, 0.92);
+    box-shadow: inset 0 0 0 1px rgba(196, 75, 98, 0.32);
+  }
+
+  .markdown-line-residue .markdown-line-text mark {
+    background: rgba(213, 71, 98, 0.2);
   }
 
   .markdown-line-no {
@@ -1915,6 +1927,11 @@
   .issue-tag-accent {
     background: rgba(225, 239, 249, 0.96);
     color: #215e89;
+  }
+
+  .issue-tag-neutral {
+    background: rgba(238, 243, 249, 0.96);
+    color: #5f7287;
   }
 
   .issue-tag-ok {

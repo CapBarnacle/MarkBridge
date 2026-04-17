@@ -832,6 +832,8 @@ function MarkdownPreview(props: {parseResult: ParseResponse | null; selectedIssu
   const highlightMap = buildMarkdownHighlightMap(props.parseResult);
   const resolvedPatchOriginByLine = buildResolvedPatchOriginByLine(resolvedPatches);
   const patchOriginCounts = countPatchOrigins(resolvedPatches);
+  const unresolvedResidueLines = buildUnresolvedResidueLines(resolvedMarkdown);
+  const selectedIssueLines = buildSelectedIssueLines(props.parseResult, props.selectedIssueId);
   const lineRefs = useRef(new Map<number, HTMLDivElement>());
 
   useEffect(() => {
@@ -914,6 +916,10 @@ function MarkdownPreview(props: {parseResult: ParseResponse | null; selectedIssu
           <span className="issue-tag issue-tag-accent">Final patches {resolvedPatches.length}</span>
           {patchOriginCounts.llm > 0 ? <span className="issue-tag issue-tag-accent">LLM patched {patchOriginCounts.llm}</span> : null}
           {patchOriginCounts.deterministic > 0 ? <span className="issue-tag issue-tag-ok">Deterministic patched {patchOriginCounts.deterministic}</span> : null}
+          {unresolvedResidueLines.size > 0 ? <span className="issue-tag issue-tag-warn">Unresolved residue {unresolvedResidueLines.size}</span> : null}
+          <span className="issue-tag issue-tag-neutral">Yellow: detected in source</span>
+          <span className="issue-tag issue-tag-ok">Blue: resolved patch</span>
+          {unresolvedResidueLines.size > 0 ? <span className="issue-tag issue-tag-warn">Rose: still unresolved in final</span> : null}
           <span className="muted-copy muted-copy-tight">
             규칙 기반과 LLM 복원 결과를 반영한 최종 downstream 후보입니다. 원본 markdown은 audit과 fallback 용으로 함께 유지됩니다.
           </span>
@@ -928,6 +934,25 @@ function MarkdownPreview(props: {parseResult: ParseResponse | null; selectedIssu
               const highlight = highlightMap.get(lineNumber);
               const resolvedPatchOrigin = viewMode === 'resolved' ? resolvedPatchOriginByLine.get(lineNumber) || null : null;
               const isResolvedPatchLine = resolvedPatchOrigin !== null;
+              const isUnresolvedResidueLine = viewMode === 'resolved' && unresolvedResidueLines.has(lineNumber);
+              const isHistoricalIssueLine = viewMode === 'resolved' && highlight !== undefined;
+              const isSelectedLine = props.selectedIssueId ? selectedIssueLines.has(lineNumber) : false;
+              const classNames = ['markdown-line'];
+              if (viewMode === 'source' && highlight) {
+                classNames.push('markdown-line-alert');
+              }
+              if (isHistoricalIssueLine) {
+                classNames.push('markdown-line-history');
+              }
+              if (isResolvedPatchLine) {
+                classNames.push('markdown-line-resolved');
+              }
+              if (isUnresolvedResidueLine) {
+                classNames.push('markdown-line-residue');
+              }
+              if (isSelectedLine) {
+                classNames.push('markdown-line-selected');
+              }
               return (
                 <div
                   key={`${lineNumber}:${line}`}
@@ -938,13 +963,7 @@ function MarkdownPreview(props: {parseResult: ParseResponse | null; selectedIssu
                       lineRefs.current.delete(lineNumber);
                     }
                   }}
-                  className={
-                    highlight
-                      ? props.selectedIssueId && highlight.issueIds.includes(props.selectedIssueId)
-                        ? `markdown-line markdown-line-alert markdown-line-selected${isResolvedPatchLine ? ' markdown-line-resolved' : ''}`
-                        : `markdown-line markdown-line-alert${isResolvedPatchLine ? ' markdown-line-resolved' : ''}`
-                      : isResolvedPatchLine ? 'markdown-line markdown-line-resolved' : 'markdown-line'
-                  }
+                  className={classNames.join(' ')}
                 >
                   <span className="markdown-line-no">{lineNumber}</span>
                   <span className="markdown-line-text">
@@ -2011,6 +2030,33 @@ function buildResolvedPatchOriginByLine(patches: RepairPatchProposal[]) {
     }
   }
   return map;
+}
+
+function buildUnresolvedResidueLines(markdown: string) {
+  const lines = markdown ? markdown.split('\n') : [];
+  const residueLines = new Set<number>();
+  for (const [index, line] of lines.entries()) {
+    if (line.includes('<!-- formula-not-decoded -->')) {
+      residueLines.add(index + 1);
+    }
+  }
+  return residueLines;
+}
+
+function buildSelectedIssueLines(result: ParseResponse | null, selectedIssueId: string | null) {
+  const selectedLines = new Set<number>();
+  if (!result || !selectedIssueId) {
+    return selectedLines;
+  }
+  const issue = result.issues.find((item) => item.issue_id === selectedIssueId);
+  if (!issue) {
+    return selectedLines;
+  }
+  const lineNumber = findIssueMarkdownLine(result, issue);
+  if (lineNumber !== null) {
+    selectedLines.add(lineNumber);
+  }
+  return selectedLines;
 }
 
 function countPatchOrigins(patches: RepairPatchProposal[]) {

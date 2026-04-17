@@ -53,6 +53,12 @@ class DocConversionFeatures:
 
 
 @dataclass(frozen=True, slots=True)
+class HwpInspectionFeatures:
+    execution_feasibility: bool | None = None
+    execution_route_candidates: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class InspectionReport:
     """Format-aware inspection output consumed by routing."""
 
@@ -63,4 +69,5 @@ class InspectionReport:
     docx: DocxInspectionFeatures | None = None
     xlsx: XlsxInspectionFeatures | None = None
     doc: DocConversionFeatures | None = None
+    hwp: HwpInspectionFeatures | None = None
     warnings: tuple[str, ...] = ()

@@ -17,7 +17,12 @@ from openpyxl import load_workbook
 from pypdf import PdfReader
 
 from markbridge.parsers.base import ParseRequest, ParseResult
-from markbridge.parsers.conversion import convert_doc_to_docx
+from markbridge.parsers.conversion import (
+    TextExtractionResult,
+    convert_doc_to_docx,
+    extract_doc_text_with_antiword,
+    extract_hwp_text_with_hwp5txt,
+)
 from markbridge.shared.ir import BlockIR, BlockKind, DocumentFormat, DocumentIR, TableBlockIR, TableCellIR
 
 
@@ -36,6 +41,10 @@ def parse_with_current_runtime(request: ParseRequest, parser_id: str) -> ParseRe
         return _parse_xlsx(request)
     if parser_id == "libreoffice":
         return _parse_doc_via_conversion(request)
+    if parser_id == "antiword":
+        return _parse_doc_with_antiword(request)
+    if parser_id == "hwp5txt":
+        return _parse_hwp_with_hwp5txt(request)
     raise ValueError(f"Unsupported parser route: {parser_id}")
 
 
@@ -299,6 +308,52 @@ def _parse_doc_via_conversion(request: ParseRequest) -> ParseResult:
             warnings=result.warnings + ((conversion.message,) if conversion.message else ()),
             metadata={"conversion_output_path": str(conversion.output_path)},
         )
+
+
+def _parse_doc_with_antiword(request: ParseRequest) -> ParseResult:
+    extraction = extract_doc_text_with_antiword(Path(request.source_path))
+    if not extraction.succeeded or extraction.text is None:
+        raise ValueError(extraction.message or "antiword text extraction failed.")
+
+    blocks = _blocks_from_markdown(extraction.text)
+    document = DocumentIR(
+        source_format=DocumentFormat.DOC,
+        blocks=tuple(blocks),
+        metadata={
+            "preferred_markdown": extraction.text,
+            "source": "antiword",
+            "extraction_mode": "text_fallback",
+        },
+    )
+    return ParseResult(
+        parser_id="antiword",
+        document=document,
+        warnings=((extraction.message,) if extraction.message else ()),
+        metadata={"extraction_mode": "text_fallback"},
+    )
+
+
+def _parse_hwp_with_hwp5txt(request: ParseRequest) -> ParseResult:
+    extraction = extract_hwp_text_with_hwp5txt(Path(request.source_path))
+    if not extraction.succeeded or extraction.text is None:
+        raise ValueError(extraction.message or "hwp5txt text extraction failed.")
+
+    blocks = _blocks_from_markdown(extraction.text)
+    document = DocumentIR(
+        source_format=DocumentFormat.HWP,
+        blocks=tuple(blocks),
+        metadata={
+            "preferred_markdown": extraction.text,
+            "source": "hwp5txt",
+            "extraction_mode": "text_route",
+        },
+    )
+    return ParseResult(
+        parser_id="hwp5txt",
+        document=document,
+        warnings=((extraction.message,) if extraction.message else ()),
+        metadata={"extraction_mode": "text_route"},
+    )
 
 
 def _blocks_from_markdown(markdown: str, *, default_page_number: int | None = None) -> list[BlockIR]:

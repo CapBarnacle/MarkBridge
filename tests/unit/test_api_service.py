@@ -54,6 +54,48 @@ def test_api_service_hwp_upload_returns_hold() -> None:
     assert dumped["trace"]["events"]
 
 
+def test_api_service_hwp_upload_can_use_enabled_text_route(monkeypatch) -> None:
+    import markbridge.inspection.basic as inspection_module
+    import markbridge.parsers.basic as parser_module
+    import markbridge.routing.runtime as runtime_module
+
+    original_statuses = runtime_module.get_runtime_statuses
+
+    def fake_statuses():
+        statuses = original_statuses()
+        statuses["hwp5txt"] = runtime_module.RuntimeParserStatus("hwp5txt", True, True)
+        return statuses
+
+    monkeypatch.setattr(runtime_module, "get_runtime_statuses", fake_statuses)
+    monkeypatch.setattr(
+        inspection_module,
+        "hwp5txt_available",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        parser_module,
+        "extract_hwp_text_with_hwp5txt",
+        lambda _path: parser_module.TextExtractionResult(
+            succeeded=True,
+            text="제1장 총칙\n\n보험계약 안내",
+            message="HWP extracted with hwp5txt text route.",
+        ),
+    )
+
+    service = MarkBridgePipeline(get_settings())
+    response = service.submit_local_upload(
+        filename="sample.hwp",
+        content=b"hwp-placeholder",
+        llm_requested=False,
+    )
+
+    dumped = response.model_dump(mode="json")
+    assert dumped["source"]["document_format"] == "hwp"
+    assert dumped["routing"]["primary_parser"] == "hwp5txt"
+    assert dumped["handoff"]["decision"] in {"accept", "degraded_accept"}
+    assert dumped["markdown"]
+
+
 def test_api_service_build_repair_candidates_adds_line_number() -> None:
     service = MarkBridgePipeline(get_settings())
     result = _build_pipeline_result()

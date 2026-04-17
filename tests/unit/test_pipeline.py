@@ -7,6 +7,7 @@ from openpyxl import Workbook
 from pypdf import PdfWriter
 
 import markbridge.routing.runtime as runtime_module
+from markbridge.parsers.base import ParseRequest
 from markbridge.pipeline import PipelineRequest, run_pipeline
 from markbridge.routing.runtime import executable_candidates_for_format
 from markbridge.parsers.basic import _blocks_from_markdown
@@ -456,6 +457,31 @@ def test_doc_candidate_appears_when_libreoffice_enabled(monkeypatch) -> None:
     assert executable_candidates_for_format(DocumentFormat.DOC) == ("libreoffice",)
 
 
+def test_doc_candidate_appears_with_antiword_fallback_when_enabled(monkeypatch) -> None:
+    original = runtime_module.get_runtime_statuses
+
+    def fake_statuses():
+        statuses = original()
+        statuses["libreoffice"] = runtime_module.RuntimeParserStatus("libreoffice", False, False, "not installed")
+        statuses["antiword"] = runtime_module.RuntimeParserStatus("antiword", True, True)
+        return statuses
+
+    monkeypatch.setattr(runtime_module, "get_runtime_statuses", fake_statuses)
+    assert executable_candidates_for_format(DocumentFormat.DOC) == ("antiword",)
+
+
+def test_hwp_candidate_appears_when_hwp5txt_enabled(monkeypatch) -> None:
+    original = runtime_module.get_runtime_statuses
+
+    def fake_statuses():
+        statuses = original()
+        statuses["hwp5txt"] = runtime_module.RuntimeParserStatus("hwp5txt", True, True)
+        return statuses
+
+    monkeypatch.setattr(runtime_module, "get_runtime_statuses", fake_statuses)
+    assert executable_candidates_for_format(DocumentFormat.HWP) == ("hwp5txt",)
+
+
 def test_docx_pipeline_ignores_disabled_markitdown_override() -> None:
     doc = DocxDocument()
     doc.add_heading("Override Heading", level=1)
@@ -486,3 +512,57 @@ def test_hwp_pipeline_is_held_as_unimplemented() -> None:
 
     assert result.parser_id is None
     assert result.decision.value == "hold"
+
+
+def test_doc_pipeline_uses_antiword_text_fallback_when_selected(monkeypatch) -> None:
+    from markbridge.parsers import basic as basic_module
+
+    monkeypatch.setattr(
+        basic_module,
+        "extract_doc_text_with_antiword",
+        lambda _path: basic_module.TextExtractionResult(
+            succeeded=True,
+            text="1. 안내사항\n\n대리인 접수 가능",
+            message="DOC extracted with antiword text fallback.",
+        ),
+    )
+
+    with NamedTemporaryFile(suffix=".doc", delete=False) as handle:
+        path = Path(handle.name)
+        handle.write(b"legacy-doc-placeholder")
+
+    result = basic_module.parse_with_current_runtime(
+        ParseRequest(source_path=path, document_format=DocumentFormat.DOC),
+        "antiword",
+    )
+
+    assert result.parser_id == "antiword"
+    assert result.document.source_format is DocumentFormat.DOC
+    assert any(block.text == "1. 안내사항" for block in result.document.blocks)
+
+
+def test_hwp_pipeline_uses_hwp5txt_text_route_when_selected(monkeypatch) -> None:
+    from markbridge.parsers import basic as basic_module
+
+    monkeypatch.setattr(
+        basic_module,
+        "extract_hwp_text_with_hwp5txt",
+        lambda _path: basic_module.TextExtractionResult(
+            succeeded=True,
+            text="제1장 총칙\n\n보험계약 안내",
+            message="HWP extracted with hwp5txt text route.",
+        ),
+    )
+
+    with NamedTemporaryFile(suffix=".hwp", delete=False) as handle:
+        path = Path(handle.name)
+        handle.write(b"hwp-placeholder")
+
+    result = basic_module.parse_with_current_runtime(
+        ParseRequest(source_path=path, document_format=DocumentFormat.HWP),
+        "hwp5txt",
+    )
+
+    assert result.parser_id == "hwp5txt"
+    assert result.document.source_format is DocumentFormat.HWP
+    assert any(block.text == "제1장 총칙" for block in result.document.blocks)

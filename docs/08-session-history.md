@@ -105,8 +105,8 @@ Important note:
   - PDF: `docling` baseline, `pypdf` comparison/fallback
   - DOCX: `python-docx`
   - XLSX: `openpyxl`
-  - DOC: conversion scaffold exists, runtime activation still blocked by LibreOffice/system tooling
-  - HWP: intake accepted, execution still returns explicit `hold`
+  - DOC: `libreoffice` conversion route plus `antiword` text fallback scaffold exist, but current runtime still lacks the required system tools
+  - HWP: `hwp5txt` text-route scaffold now exists, but current runtime still lacks the command so execution remains `hold`
 - `preferred_markdown` handling now carries explicit Markdown line numbers so preview highlight mapping is more stable.
 - API responses now include:
   - `repair_candidates`

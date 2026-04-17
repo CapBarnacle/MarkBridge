@@ -8,7 +8,7 @@ from docx import Document as DocxDocument
 from openpyxl import load_workbook
 from pypdf import PdfReader
 
-from markbridge.inspection.model import DocConversionFeatures
+from markbridge.inspection.model import DocConversionFeatures, HwpInspectionFeatures
 from markbridge.inspection.model import (
     CommonInspectionFeatures,
     DocxInspectionFeatures,
@@ -16,7 +16,7 @@ from markbridge.inspection.model import (
     PdfInspectionFeatures,
     XlsxInspectionFeatures,
 )
-from markbridge.parsers.conversion import libreoffice_available
+from markbridge.parsers.conversion import antiword_available, hwp5txt_available, libreoffice_available
 from markbridge.shared.ir import DocumentFormat
 
 
@@ -97,23 +97,39 @@ def inspect_document(source_path: Path, document_format: DocumentFormat) -> Insp
         )
 
     if document_format is DocumentFormat.DOC:
+        libreoffice_ready = libreoffice_available()
+        antiword_ready = antiword_available()
+        quality_signals: list[str] = []
+        warnings: list[str] = []
+        if libreoffice_ready:
+            quality_signals.append("libreoffice_route_available")
+        if antiword_ready:
+            quality_signals.append("antiword_text_route_available")
+        if not quality_signals:
+            quality_signals.append("conversion_tool_missing")
+            warnings.append("No DOC execution route is available in the current runtime.")
         return InspectionReport(
             source_path=source_path,
             document_format=document_format,
             common=common,
             doc=DocConversionFeatures(
-                conversion_feasibility=libreoffice_available(),
-                conversion_output_quality_signals=("libreoffice_route_available",) if libreoffice_available() else ("conversion_tool_missing",),
+                conversion_feasibility=libreoffice_ready or antiword_ready,
+                conversion_output_quality_signals=tuple(quality_signals),
             ),
-            warnings=() if libreoffice_available() else ("LibreOffice conversion route is unavailable.",),
+            warnings=tuple(warnings),
         )
 
     if document_format is DocumentFormat.HWP:
+        hwp_ready = hwp5txt_available()
         return InspectionReport(
             source_path=source_path,
             document_format=document_format,
             common=common,
-            warnings=("HWP parsing is not implemented in the current runtime.",),
+            hwp=HwpInspectionFeatures(
+                execution_feasibility=hwp_ready,
+                execution_route_candidates=("hwp5txt",) if hwp_ready else (),
+            ),
+            warnings=() if hwp_ready else ("HWP parsing is not implemented in the current runtime.",),
         )
 
     return InspectionReport(
