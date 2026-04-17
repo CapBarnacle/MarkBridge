@@ -92,7 +92,10 @@ def test_api_service_hwp_upload_can_use_enabled_text_route(monkeypatch) -> None:
     dumped = response.model_dump(mode="json")
     assert dumped["source"]["document_format"] == "hwp"
     assert dumped["routing"]["primary_parser"] == "hwp5txt"
-    assert dumped["handoff"]["decision"] in {"accept", "degraded_accept"}
+    assert dumped["handoff"]["decision"] == "degraded_accept"
+    assert "degraded_parser_route" in dumped["handoff"]["reasons"]
+    assert dumped["handoff"]["metadata"]["parser_route_kind"] == "text_route"
+    assert "parser_route_kind=text_route" in dumped["notes"]
     assert dumped["markdown"]
 
 

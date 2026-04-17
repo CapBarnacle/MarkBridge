@@ -17,6 +17,7 @@
 - runtime routing은 `DocumentFormat.DOC -> libreoffice -> antiword` 순서의 scaffold를 이미 가진다.
 - parser 구현은 `.doc -> .docx` 변환 뒤 기존 DOCX parser를 재사용한다.
 - `antiword` 가 설치된 환경에서는 text fallback route도 바로 활성화될 수 있다.
+- `antiword` fallback이 선택되면 handoff는 강제로 `degraded_accept` 로 표기되고 route kind가 metadata/notes에 남는다.
 - 현재 병목은 기능 부재보다:
   - target runtime에서 LibreOffice가 실제로 설치되어 있는지,
   - `antiword` fallback을 운영상 허용할지,
@@ -29,6 +30,7 @@
 - intake/API surface는 이미 열려 있다.
 - inspection은 `hwp5txt` readiness를 볼 수 있다.
 - runtime routing에는 `hwp5txt` text route scaffold가 추가되어 있다.
+- `hwp5txt` text route가 선택되면 handoff는 강제로 `degraded_accept` 로 표기되고 route kind가 metadata/notes에 남는다.
 - 다만 current runtime에는 command가 없어서 실제 실행은 여전히 explicit `hold` 상태다.
 - 즉 `.hwp` 는 완전한 공백에서 "tool-activated text route scaffold" 단계로 진전된 상태다.
 

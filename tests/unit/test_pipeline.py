@@ -514,6 +514,93 @@ def test_hwp_pipeline_is_held_as_unimplemented() -> None:
     assert result.decision.value == "hold"
 
 
+def test_doc_pipeline_degrades_handoff_when_antiword_route_is_used(monkeypatch) -> None:
+    import markbridge.inspection.basic as inspection_module
+    import markbridge.parsers.basic as parser_module
+    import markbridge.routing.runtime as runtime_module
+
+    original_statuses = runtime_module.get_runtime_statuses
+
+    def fake_statuses():
+        statuses = original_statuses()
+        statuses["libreoffice"] = runtime_module.RuntimeParserStatus("libreoffice", False, False, "not installed")
+        statuses["antiword"] = runtime_module.RuntimeParserStatus(
+            "antiword",
+            True,
+            True,
+            None,
+            supported_formats=(DocumentFormat.DOC,),
+            route_kind="degraded_fallback",
+        )
+        return statuses
+
+    monkeypatch.setattr(runtime_module, "get_runtime_statuses", fake_statuses)
+    monkeypatch.setattr(inspection_module, "antiword_available", lambda: True)
+    monkeypatch.setattr(
+        parser_module,
+        "extract_doc_text_with_antiword",
+        lambda _path: parser_module.TextExtractionResult(
+            succeeded=True,
+            text="1. 안내사항\n\n대리인 접수 가능",
+            message="DOC extracted with antiword text fallback.",
+        ),
+    )
+
+    with NamedTemporaryFile(suffix=".doc", delete=False) as handle:
+        path = Path(handle.name)
+        handle.write(b"legacy-doc-placeholder")
+
+    result = run_pipeline(PipelineRequest(source_path=path, document_format=DocumentFormat.DOC))
+
+    assert result.parser_id == "antiword"
+    assert result.decision.value == "degraded_accept"
+    assert "degraded_parser_route" in result.handoff.reasons
+    assert result.handoff.metadata["parser_route_kind"] == "degraded_fallback"
+
+
+def test_hwp_pipeline_degrades_handoff_when_text_route_is_used(monkeypatch) -> None:
+    import markbridge.inspection.basic as inspection_module
+    import markbridge.parsers.basic as parser_module
+    import markbridge.routing.runtime as runtime_module
+
+    original_statuses = runtime_module.get_runtime_statuses
+
+    def fake_statuses():
+        statuses = original_statuses()
+        statuses["hwp5txt"] = runtime_module.RuntimeParserStatus(
+            "hwp5txt",
+            True,
+            True,
+            None,
+            supported_formats=(DocumentFormat.HWP,),
+            route_kind="text_route",
+        )
+        return statuses
+
+    monkeypatch.setattr(runtime_module, "get_runtime_statuses", fake_statuses)
+    monkeypatch.setattr(inspection_module, "hwp5txt_available", lambda: True)
+    monkeypatch.setattr(
+        parser_module,
+        "extract_hwp_text_with_hwp5txt",
+        lambda _path: parser_module.TextExtractionResult(
+            succeeded=True,
+            text="제1장 총칙\n\n보험계약 안내",
+            message="HWP extracted with hwp5txt text route.",
+        ),
+    )
+
+    with NamedTemporaryFile(suffix=".hwp", delete=False) as handle:
+        path = Path(handle.name)
+        handle.write(b"hwp-placeholder")
+
+    result = run_pipeline(PipelineRequest(source_path=path, document_format=DocumentFormat.HWP))
+
+    assert result.parser_id == "hwp5txt"
+    assert result.decision.value == "degraded_accept"
+    assert "degraded_parser_route" in result.handoff.reasons
+    assert result.handoff.metadata["parser_route_kind"] == "text_route"
+
+
 def test_doc_pipeline_uses_antiword_text_fallback_when_selected(monkeypatch) -> None:
     from markbridge.parsers import basic as basic_module
 

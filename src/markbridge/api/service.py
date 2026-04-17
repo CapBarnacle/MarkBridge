@@ -2130,6 +2130,9 @@ class MarkBridgePipeline:
             f"parser={result.parser_id or 'none'}",
             f"handoff={result.decision.value}",
         ]
+        parser_route_kind = result.handoff.metadata.get("parser_route_kind")
+        if parser_route_kind:
+            notes.append(f"parser_route_kind={parser_route_kind}")
         if "export_dir" in result.metadata:
             notes.append(f"export_dir={result.metadata['export_dir']}")
         if routing_advice.used and routing_advice.recommendation:

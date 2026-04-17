@@ -12,7 +12,7 @@ from markbridge.parsers.base import ParseRequest
 from markbridge.parsers.basic import parse_with_current_runtime
 from markbridge.repairs.formula import generate_repair_candidates
 from markbridge.renderers.markdown import render_markdown_with_map
-from markbridge.routing.runtime import choose_route
+from markbridge.routing.runtime import choose_route, get_runtime_statuses
 from markbridge.routing.model import RouteLevel, RoutingDecision
 from markbridge.shared.ir import DocumentFormat, DocumentIR
 from markbridge.tracing.flow import STANDARD_TRACE_FLOW
@@ -47,6 +47,39 @@ def _attach_inspection(parse_request: ParseRequest, inspection: InspectionReport
         document_format=parse_request.document_format,
         inspection=inspection,
         options=dict(parse_request.options),
+    )
+
+
+def _apply_route_quality_adjustment(handoff: QualityGateResult, *, parser_id: str) -> QualityGateResult:
+    status = get_runtime_statuses().get(parser_id)
+    if status is None:
+        return handoff
+    if status.route_kind not in {"degraded_fallback", "text_route"}:
+        return handoff
+    if handoff.decision is HandoffDecision.HOLD:
+        return handoff
+
+    reasons = list(handoff.reasons)
+    if "degraded_parser_route" not in reasons:
+        reasons.append("degraded_parser_route")
+    metadata = dict(handoff.metadata)
+    metadata["parser_route_kind"] = status.route_kind
+    metadata["parser_id"] = parser_id
+    if handoff.decision is HandoffDecision.ACCEPT:
+        return QualityGateResult(
+            decision=HandoffDecision.DEGRADED_ACCEPT,
+            summary=(
+                "Allow downstream handoff with degraded status because the selected parser route is "
+                f"{status.route_kind}."
+            ),
+            reasons=tuple(reasons),
+            metadata=metadata,
+        )
+    return QualityGateResult(
+        decision=handoff.decision,
+        summary=handoff.summary,
+        reasons=tuple(reasons),
+        metadata=metadata,
     )
 
 
@@ -266,7 +299,7 @@ def run_pipeline(request: PipelineRequest) -> PipelineResult:
         data={"issue_count": len(validation.issues)},
     )
 
-    handoff = evaluate_handoff(validation)
+    handoff = _apply_route_quality_adjustment(evaluate_handoff(validation), parser_id=route.primary_parser)
     if handoff.decision.value == "hold":
         final_status = ParseStatus.FAILED
     elif handoff.decision.value == "degraded_accept":
