@@ -64,7 +64,286 @@
 10. downstream handoff decision을 계산한다.
 11. repair candidate와 run artifact를 생성한다.
 
-## 5. 전체 Decision Tree
+## 5. Inspection 단계는 실제로 무엇을 하는가
+
+inspection은 parser를 실행해서 최종 markdown를 만드는 단계가 아니다.
+현재 runtime에서 문서를 먼저 가볍게 진단해서 routing과 품질 해석에 쓸 신호를 만드는 단계다.
+
+현재 inspection의 공통 특징:
+
+- OCR을 하지 않는다
+- LLM을 호출하지 않는다
+- IR을 만들지 않는다
+- markdown를 만들지 않는다
+- parser 내부 heading/table normalization ruleset을 적용하지 않는다
+
+중요한 점:
+
+- 현재 구현은 "앞의 몇 페이지만 inspection"하는 샘플링 방식이 아니다
+- 포맷에 따라 문서 전체를 가볍게 순회하는 구조다
+- 다만 parsing 본단계처럼 구조 복원까지 하지는 않는다
+
+### 5.1 포맷별 inspection 실제 동작
+
+| 포맷 | inspection에서 실제로 하는 일 | 문서 전체 읽기 여부 | 현재 비용 특성 |
+|---|---|---|---|
+| PDF | `PdfReader`로 전체 페이지를 순회하며 각 페이지에 대해 `extract_text()` 호출, text 존재 여부와 `|` 개수 집계 | 전체 페이지 순회 | 페이지 수가 많을수록 선형적으로 증가 |
+| DOCX | 문서를 열고 전체 paragraph 수, table 수, heading style 존재 여부 계산 | 문서 전체 paragraph/table 목록 사용 | 문단 수와 표 수에 비례 |
+| XLSX | workbook 전체 sheet와 전체 cell을 순회하며 merged cell, formula, non-empty cell 집계 | 전체 workbook 순회 | sheet 수와 cell 수에 비례 |
+| DOC | `libreoffice`, `antiword` 사용 가능 여부만 확인 | 내용 전체를 읽지 않음 | 매우 낮음 |
+| HWP | `hwp5txt` 사용 가능 여부만 확인 | 내용 전체를 읽지 않음 | 매우 낮음 |
+
+### 5.2 PDF inspection 세부 설명
+
+현재 PDF inspection은 전체 PDF를 텍스트 기준으로 가볍게 스캔한다.
+
+실제 동작:
+
+1. `PdfReader`로 PDF를 연다.
+2. 전체 페이지 수를 계산한다.
+3. 모든 페이지를 순회한다.
+4. 각 페이지에서 `extract_text()`를 호출한다.
+5. 비어 있지 않은 text page 수를 센다.
+6. 텍스트 안의 `|` 개수를 table candidate signal로 누적한다.
+
+현재 산출하는 값:
+
+- `page_count`
+- `text_layer_coverage`
+- `table_candidate_count`
+- `complexity_score`
+
+### 5.3 DOCX inspection 세부 설명
+
+현재 DOCX inspection은 전체 문서를 열고 paragraph와 table 메타 신호를 계산한다.
+
+실제 동작:
+
+1. `DocxDocument`로 문서를 연다.
+2. 전체 paragraph list를 만든다.
+3. 전체 table 수를 센다.
+4. paragraph 전체를 돌며 style name에 `Heading`이 들어가는지 확인한다.
+
+현재 산출하는 값:
+
+- `paragraph_count`
+- `table_count`
+- `heading_style_availability`
+- `complexity_score`
+
+주의:
+
+- 여기서는 heading heuristic을 적용하지 않는다
+- numbered heading, short title, layout table 같은 규칙은 parser 본단계에서 적용된다
+
+### 5.4 XLSX inspection 세부 설명
+
+현재 XLSX inspection은 workbook 전체를 순회해 구조 신호를 계산한다.
+
+실제 동작:
+
+1. `load_workbook(data_only=False)`로 workbook을 연다.
+2. 전체 worksheet 목록을 가져온다.
+3. 전체 sheet에 대해 merged range 수를 센다.
+4. 전체 row와 cell을 순회한다.
+5. non-empty cell 수를 센다.
+6. 문자열이 `=`로 시작하는 cell을 formula cell로 센다.
+
+현재 산출하는 값:
+
+- `sheet_count`
+- `merged_cell_count`
+- `formula_ratio`
+- `complexity_score`
+
+### 5.5 DOC / HWP inspection 세부 설명
+
+DOC와 HWP는 현재 inspection 단계에서 문서 내용을 깊게 읽는 구조가 아니다.
+
+DOC:
+
+- `libreoffice` 가능 여부 확인
+- `antiword` 가능 여부 확인
+- conversion feasibility와 quality signal 생성
+
+HWP:
+
+- `hwp5txt` 가능 여부 확인
+- execution feasibility와 route candidate 생성
+
+즉 DOC와 HWP inspection은 현재 "내용 분석"보다 "실행 가능 route 확인"에 더 가깝다.
+
+### 5.6 inspection 비용 해석
+
+현재 inspection은 포맷에 따라 문서 전체를 훑기 때문에 입력이 커질수록 비용이 늘어난다.
+다만 현재 비용은 아래 이유로 본 parsing보다 훨씬 제한적이다.
+
+- OCR 없음
+- LLM 없음
+- markdown 생성 없음
+- IR normalization 없음
+- deterministic library 호출 중심
+
+따라서 현재 inspection은 "일부 페이지만 읽는 샘플링"이 아니라 "문서 전체를 가볍게 스캔하는 사전 진단 단계"라고 이해하는 것이 맞다.
+
+### 5.7 inspection 결과 중 LLM에 실제로 전달되는 값
+
+inspection은 포맷별로 여러 값을 계산하지만, 현재 LLM routing recommendation prompt에는 일부만 들어간다.
+
+현재 LLM prompt에 들어가는 inspection 기반 값:
+
+- `page_count`
+- `sheet_count`
+- `complexity_score`
+
+LLM prompt에 같이 들어가는 다른 값:
+
+- `document_format`
+- `source_name`
+- `parser_hint`
+- `executable_candidates`
+
+현재 inspection 계산값과 LLM 전달값 차이:
+
+| 포맷 | inspection에서 계산하는 값 | 현재 LLM prompt에 실제 전달되는 값 | 현재 전달되지 않는 값 |
+|---|---|---|---|
+| PDF | `page_count`, `text_layer_coverage`, `table_candidate_count`, `complexity_score` | `page_count`, `complexity_score` | `text_layer_coverage`, `table_candidate_count` |
+| DOCX | `paragraph_count`, `table_count`, `heading_style_availability`, `complexity_score` | `complexity_score` | `paragraph_count`, `table_count`, `heading_style_availability` |
+| XLSX | `sheet_count`, `merged_cell_count`, `formula_ratio`, `complexity_score` | `sheet_count`, `complexity_score` | `merged_cell_count`, `formula_ratio` |
+| DOC | `conversion_feasibility`, `conversion_output_quality_signals` | 직접 전달되는 inspection field는 사실상 없음 | 대부분의 DOC inspection detail |
+| HWP | `execution_feasibility`, `execution_route_candidates` | 직접 전달되는 inspection field는 사실상 없음 | 대부분의 HWP inspection detail |
+
+즉 현재 LLM은 inspection 전체를 받는 것이 아니라, 아주 축약된 feature summary만 받는다.
+
+### 5.8 complexity_score 계산 방식
+
+`complexity_score`는 현재 포맷별로 매우 단순한 heuristic으로 계산된다.
+정밀한 연속 점수라기보다 "복잡한 신호가 있는가"를 나타내는 현재형 indicator에 가깝다.
+
+| 포맷 | 현재 계산식 | 의미 해석 |
+|---|---|---|
+| PDF | `float(table_candidate_count > 0)` | 텍스트 안에 `|`가 하나라도 있으면 `1.0`, 아니면 `0.0` |
+| DOCX | `float(table_count > 0)` | 표가 하나라도 있으면 `1.0`, 아니면 `0.0` |
+| XLSX | `float(merged_cell_count > 0 or formula_cells > 0)` | merged cell 또는 formula cell이 하나라도 있으면 `1.0`, 아니면 `0.0` |
+| DOC | 현재 별도 complexity score 계산 없음 | route feasibility 중심 |
+| HWP | 현재 별도 complexity score 계산 없음 | route feasibility 중심 |
+
+주의:
+
+- 현재 `complexity_score`는 세밀한 난이도 점수가 아니다
+- 사실상 0 또는 1에 가까운 boolean-style signal이다
+- 표 하나, formula cell 하나 같은 단일 신호만 있어도 1.0이 될 수 있다
+
+따라서 현재 LLM routing에서 `complexity_score`는 "구조적 복잡성의 정밀 추정치"가 아니라 "복잡한 징후가 보이는가" 정도로 해석하는 것이 맞다.
+
+### 5.9 현재 LLM routing recommendation의 유효성과 한계
+
+현재 구조에서 LLM routing recommendation은 최종 parser를 단독으로 결정하는 역할이 아니다.
+현재 위치는 "보조 추천기"에 가깝다.
+
+이유:
+
+- LLM은 문서 원문 전체를 보지 않는다
+- parser output을 보지 않는다
+- validation issue를 보지 않는다
+- inspection 전체가 아니라 축약된 feature summary만 본다
+- `complexity_score`도 매우 거친 heuristic이다
+
+현재 추천 자체의 한계:
+
+- PDF의 `text_layer_coverage`, `table_candidate_count`가 직접 prompt에 안 들어간다
+- DOCX의 `paragraph_count`, `table_count`, `heading_style_availability`가 직접 prompt에 안 들어간다
+- XLSX의 `merged_cell_count`, `formula_ratio`가 직접 prompt에 안 들어간다
+- `complexity_score`가 사실상 0 또는 1에 가까워 세밀한 차이를 잘 설명하지 못한다
+
+그럼에도 현재 구조가 운영상 방어 가능한 이유는, 추천을 그대로 적용하지 않기 때문이다.
+
+실제 동작:
+
+1. baseline parser를 먼저 실행한다.
+2. LLM이 다른 parser를 추천하면 candidate parser도 실행한다.
+3. 두 결과를 quality signal로 비교한다.
+4. candidate가 실제로 더 좋을 때만 override를 적용한다.
+
+따라서 현재 구조는 아래처럼 이해하는 것이 맞다.
+
+- LLM 추천 자체의 유효성: 제한적
+- LLM 추천을 포함한 전체 routing 구조의 유효성: 비교적 합리적
+
+한 문장 요약:
+
+현재 LLM routing은 "정밀 추천기"라기보다 "추가 비교 후보를 제안하는 약한 추천기"이며, 최종 신뢰는 실제 parser 결과 비교에서 확보한다.
+
+### 5.10 baseline parser와 candidate parser의 품질 평가 방식
+
+현재 구조에서 LLM routing override는 추천만으로 결정되지 않는다.
+최종 판단은 baseline parser와 candidate parser를 실제로 모두 실행해 본 뒤 품질을 비교해서 내려진다.
+
+현재 비교 순서:
+
+1. baseline parser 실행
+2. candidate parser 실행
+3. 각 결과의 markdown와 validation issue를 읽음
+4. 품질 요약값 계산
+5. candidate가 실제로 더 좋을 때만 override 적용
+
+즉 inspection 기반 추정 비교가 아니라, 실제 parser output 기반 비교다.
+
+현재 품질 요약에 쓰는 주요 신호:
+
+| 신호 | 의미 | 일반적 해석 |
+|---|---|---|
+| `heading_count` | markdown heading 수 | 높을수록 구조 보존에 유리 |
+| `average_line_length` | 평균 line 길이 | 길수록 구조 붕괴 가능성 증가 |
+| `long_line_count` | 180자 이상 line 수 | 많을수록 불리 |
+| `very_long_line_count` | 400자 이상 line 수 | 많을수록 더 불리 |
+| `long_line_ratio` | 긴 line 비율 | 낮을수록 유리 |
+| `very_long_line_ratio` | 매우 긴 line 비율 | 낮을수록 유리 |
+| `text_corruption_issue_count` | `text_corruption` issue 수 | 낮을수록 유리 |
+| `private_use_count` | private-use glyph 수 | 낮을수록 유리 |
+| `formula_placeholder_count` | formula placeholder issue 수 | 낮을수록 유리 |
+| `corruption_density` | non-empty line 대비 corruption issue 비율 | 낮을수록 유리 |
+| `formula_placeholder_density` | non-empty line 대비 formula placeholder 비율 | 낮을수록 유리 |
+| `error_count` | validation error 수 | 낮을수록 유리 |
+
+현재 점수 해석 방식:
+
+- 100점 기준 heuristic score로 시작
+- error가 있으면 큰 감점
+- corruption density가 높으면 큰 감점
+- formula placeholder density가 높으면 추가 감점
+- private-use glyph가 많으면 감점
+- long line / very long line 비율이 높으면 감점
+- heading이 적절히 살아 있으면 가점
+- line은 많지만 heading이 전혀 없으면 감점
+
+따라서 현재 모델은 아래 방향을 선호한다.
+
+- 구조가 잘 살아 있는 markdown
+- line collapse가 적은 결과
+- 깨진 glyph와 formula placeholder가 적은 결과
+- validation error가 없는 결과
+
+override 판단의 성격:
+
+- 작은 점수 차이만으로 바로 뒤집지 않는다
+- error, corruption, line collapse, heading 보존을 함께 본다
+- candidate가 실제로 더 낫다고 볼 수 있을 때만 적용한다
+
+현재 장점:
+
+- LLM 추천을 직접 신뢰하지 않는다
+- 실제 parser 결과를 기준으로 비교한다
+- 구조 보존과 corruption을 동시에 본다
+
+현재 한계:
+
+- visual fidelity를 직접 측정하지 않는다
+- 표 의미 보존을 완전하게 점수화하지 못한다
+- heading 수가 많다고 항상 더 좋은 것은 아니다
+- line length 기반 지표는 문서 성격에 따라 과벌점 가능성이 있다
+
+## 6. 전체 Decision Tree
 
 ```mermaid
 flowchart TD
@@ -102,7 +381,7 @@ flowchart TD
     Z --> AA
 ```
 
-## 6. 전체 공통 Ruleset
+## 7. 전체 공통 Ruleset
 
 ### 6.1 Flow Ruleset
 
@@ -148,7 +427,7 @@ flowchart TD
 | `handoff.warning_to_degraded_accept` | warning issue만 존재 | `degraded_accept`로 결정 | downstream이 warning-grade risk를 이해해야 함 |
 | `handoff.degraded_route_adjustment` | route kind가 `degraded_fallback` 또는 `text_route` | handoff를 더 보수적으로 낮춤 | issue가 적어도 degraded 상태가 될 수 있음 |
 
-## 7. Parser Ruleset Layer
+## 8. Parser Ruleset Layer
 
 MarkBridge parsing은 "파일 포맷 분기 -> parser 선택"에서 끝나지 않는다. 선택된 parser는 각각 별도의 내부 ruleset을 적용한다.
 
@@ -172,7 +451,117 @@ flowchart TD
 | `common.markdown.line_map_from_metadata` | `markdown_line_numbers` metadata가 존재 | explicit line number 기반 line map 생성 | 잘못된 metadata가 highlight 품질을 낮춤 |
 | `common.markdown.line_map_fallback_match` | explicit line mapping이 없거나 불완전 | heuristic line match 사용 | exact line correspondence가 약해질 수 있음 |
 
-## 8. 포맷별 Decision Tree 및 Ruleset
+## 9. markdown 및 line map 렌더링
+
+markdown 렌더링은 parser가 만든 공통 IR을 사람이 읽을 수 있는 최종 markdown 문자열로 바꾸는 단계다.
+line map 렌더링은 그 markdown의 각 줄이 어떤 block, cell, page와 연결되는지 기록하는 단계다.
+
+### 9.1 markdown 렌더링
+
+입력:
+
+- `DocumentIR`
+- `BlockIR`
+- `TableBlockIR`
+- `TableCellIR`
+
+출력:
+
+- 최종 markdown 텍스트
+
+기본 렌더링 예:
+
+- heading block -> markdown heading line
+- paragraph block -> 문단 텍스트
+- note block -> `>` note line
+- table block -> markdown table
+
+### 9.2 preferred_markdown 경로
+
+현재 일부 parser는 markdown를 직접 생성해서 `preferred_markdown`으로 넘긴다.
+
+대표 예:
+
+- `docling`
+- `antiword`
+- `hwp5txt`
+
+이 경우 renderer는 block을 다시 조립하기보다 parser가 만든 markdown를 우선 사용한다.
+
+현재 렌더링 경로는 두 가지다.
+
+1. parser가 만든 `preferred_markdown` 재사용
+2. IR block을 순서대로 렌더링해서 markdown 생성
+
+### 9.3 line map이란 무엇인가
+
+line map은 markdown 각 줄의 추적 정보다.
+
+현재 line map entry에는 아래 정보가 들어간다.
+
+- `line_number`
+- `text`
+- `refs`
+- `page_number` 가능 시 포함
+
+핵심은 `refs`다.
+
+예:
+
+- `block-3`
+- `table cell r2 c4`
+
+즉 어떤 markdown line이 어떤 block 또는 table cell에서 왔는지 추적할 수 있게 해준다.
+
+### 9.4 line map이 필요한 이유
+
+line map이 없으면 validation issue와 실제 markdown line을 연결하기 어렵다.
+
+현재 line map의 역할:
+
+- validation issue를 markdown 줄과 연결
+- UI highlight 위치 계산
+- block export API의 line range 계산
+- 줄 단위 page hint 제공
+
+즉 markdown는 사람이 읽는 결과이고, line map은 그 결과의 설명 가능성과 추적성을 보강하는 sidecar다.
+
+### 9.5 현재 line map 생성 방식
+
+현재는 두 가지 방식이 있다.
+
+1. explicit metadata 기반
+2. heuristic matching 기반
+
+explicit metadata 기반:
+
+- block metadata에 `markdown_line_numbers`가 있으면 그 줄 번호를 그대로 사용한다
+
+heuristic matching 기반:
+
+- explicit line number가 없거나 부족하면
+- renderer가 예상 rendered line과 실제 markdown line을 비교해 가장 비슷한 줄을 찾는다
+
+즉 `preferred_markdown`를 그대로 쓰는 경우에도 line map은 별도로 연결해야 한다.
+
+### 9.6 table 렌더링의 특수성
+
+table block은 일반 paragraph보다 더 세밀한 추적 정보가 필요하다.
+
+현재 table 렌더링 시:
+
+- header line 생성
+- separator line 생성
+- row line 생성
+- row/cell 수준 ref를 line map에 함께 기록
+
+또한 merged cell signal이 있는 complex table은 table 앞에 안내 line을 추가할 수 있다.
+
+예:
+
+- `[Complex table preserved: table-id]`
+
+## 10. 포맷별 Decision Tree 및 Ruleset
 
 ### 8.1 PDF
 
@@ -306,7 +695,7 @@ flowchart TD
 | `hwp.hwp5txt.text_route` | `hwp5txt` route 선택 | text extraction 후 markdown blockization 적용 | layout-aware parser가 아니라 text route 중심 |
 | `hwp.hwp5txt.preferred_markdown` | extraction 성공 | extracted text를 preferred markdown으로 사용 | line break와 구조 표식 품질이 extracted text에 전적으로 의존 |
 
-## 9. Repair Ruleset
+## 11. Repair Ruleset
 
 | Rule ID | Trigger | Action | Risk |
 |---|---|---|---|
@@ -315,7 +704,7 @@ flowchart TD
 | `repair.formula.private_use_transliteration` | private-use glyph 존재 | transliteration table로 문자 치환 | 수학적으로 완전하지 않을 수 있음 |
 | `repair.formula.normalize_span` | formula span 추출 성공 | 수식 span 정규화 및 confidence 계산 | table label과 formula span 혼동 가능 |
 
-## 10. 품질 판단 신호
+## 12. 품질 판단 신호
 
 ### 10.1 Validation Signal
 
@@ -340,7 +729,156 @@ flowchart TD
 | `degraded_accept` | warning-grade issue가 있거나 degraded/text route가 적용됨 |
 | `hold` | blocking issue가 있거나 executable route가 없음 |
 
-## 11. 컨플루언스 게시 팁
+## 13. validation은 누가, 어떻게 수행하는가
+
+현재 validation은 LLM이 아니라 deterministic validator가 수행한다.
+
+실행 주체:
+
+- `validate_document()` in `validators/execution.py`
+
+호출 주체:
+
+- pipeline orchestrator
+
+즉 parser와 renderer가 끝난 뒤 pipeline이 validation을 실행한다.
+
+### 13.1 수행 시점
+
+현재 순서:
+
+1. parser가 `DocumentIR` 생성
+2. renderer가 markdown 생성
+3. validator가 `DocumentIR`와 `markdown_text`를 받아 검사
+4. `ValidationReport` 생성
+5. handoff decision 계산
+6. repair candidate generation
+
+즉 validation은 parser 결과 이후에 수행되는 사후 품질 검사다.
+
+### 13.2 입력
+
+현재 validator 입력:
+
+- `DocumentIR`
+- `markdown_text`
+
+이유:
+
+- block 구조에서 더 잘 보이는 문제가 있음
+- 최종 markdown 텍스트에서 더 잘 보이는 문제가 있음
+
+### 13.3 현재 수행하는 검사
+
+현재 핵심 검사는 세 가지다.
+
+1. `empty_output`
+2. `text_corruption`
+3. `table_structure`
+
+#### empty_output
+
+- block도 없고 markdown도 비어 있으면 생성
+- severity는 `ERROR`
+
+#### text_corruption
+
+현재 탐지 대상:
+
+- replacement character `�`
+- private-use glyph
+- `<!-- formula-not-decoded -->`
+
+검사 방식:
+
+- document block 내부 텍스트 검사
+- 필요 시 markdown 전체도 검사
+
+현재 corruption class도 함께 붙인다.
+
+대표 class:
+
+- `symbol_only_corruption`
+- `inline_formula_corruption`
+- `table_formula_corruption`
+- `formula_placeholder`
+- `structure_loss`
+
+#### table_structure
+
+현재 `TableBlockIR`에 대해 수행된다.
+
+현재 보는 기준:
+
+- header row 부재
+- row width variation 이상
+
+merged cell signal이 있거나 markdown table source인 경우에는 경고 쪽으로 더 완화해서 본다.
+
+### 13.4 validation issue에 포함되는 정보
+
+현재 issue는 구조화된 레코드다.
+
+대표 필드:
+
+- `issue_id`
+- `code`
+- `severity`
+- `message`
+- `location`
+- `excerpts`
+- `details`
+- `repairable`
+
+즉 validation은 이후 trace, UI highlight, repair 단계에서 다시 사용할 수 있는 evidence를 남긴다.
+
+### 13.5 validation 결과의 사용처
+
+validation 결과는 `ValidationReport`로 묶인다.
+
+대표 summary:
+
+- `issue_count`
+- `error_count`
+- `warning_count`
+
+현재 이 결과는 아래로 바로 연결된다.
+
+- trace emission
+- handoff decision
+- repair candidate generation
+
+### 13.6 handoff와의 연결
+
+기본 규칙:
+
+- error issue가 있으면 `hold`
+- warning만 있으면 `degraded_accept`
+- issue가 없으면 `accept`
+
+추가로 route kind가 `degraded_fallback` 또는 `text_route`면 결과를 더 보수적으로 해석한다.
+
+즉 validation은 단순 리포트가 아니라 downstream 전달 여부를 결정하는 핵심 입력이다.
+
+### 13.7 역할과 한계
+
+현재 역할:
+
+- 빈 결과 탐지
+- 깨진 glyph / formula placeholder / table 구조 이상 탐지
+- traceable issue record 생성
+- handoff와 repair 단계 입력 제공
+
+현재 한계:
+
+- visual fidelity 직접 검증 불가
+- 표 의미 보존 완전 검증 불가
+- semantic correctness 완전 판단 불가
+- heuristic 기반이라 false positive / false negative 가능
+
+즉 현재 validation은 "문서가 완벽한지 증명"하는 단계가 아니라, 운영상 필요한 blocking/degraded 신호를 deterministic하게 생성하는 단계다.
+
+## 14. 컨플루언스 게시 팁
 
 - 이 문서는 markdown 기반이라 컨플루언스에 그대로 붙여넣은 뒤 heading/table/mermaid만 확인하면 된다.
 - 컨플루언스 페이지를 분리하려면 아래 순서로 쪼개는 것이 좋다.
