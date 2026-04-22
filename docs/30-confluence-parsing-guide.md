@@ -74,6 +74,40 @@
 10. downstream handoff decision을 계산한다.
 11. repair candidate와 run artifact를 생성한다.
 
+### 4.1 파일 포맷별 현재 등록 parser
+
+현재 runtime registry 기준으로 등록된 parser/tool은 아래와 같다.
+
+이 표는 "코드에 등록돼 있는 parser"를 보여준다.
+즉 현재 baseline routing에 실제로 쓰는 parser만이 아니라, 설치는 돼 있지만 policy상 비활성인 parser도 함께 포함한다.
+
+| 포맷 | parser_id | 현재 역할 | 현재 상태 해석 | 비고 |
+|---|---|---|---|---|
+| PDF | `docling` | `primary` | enabled일 때 baseline 우선 후보 | 현재 선호 PDF route |
+| PDF | `pypdf` | `fallback` | `docling`이 없을 때 실행 가능한 fallback | inspection에서도 `PdfReader` 기반 신호 계산에 사용 |
+| PDF | `pdfplumber` | `secondary` | 현재 registry에는 등록돼 있지만 policy상 `enabled=false` | 보조 후보로만 유지 |
+| DOCX | `python-docx` | `primary` | 현재 유일한 실행 route | DOCX baseline parser |
+| XLSX | `openpyxl` | `primary` | 현재 유일한 실행 route | XLSX baseline parser |
+| DOC | `libreoffice` | `primary` | enabled이면 DOC를 DOCX로 변환 후 후속 parse | conversion route |
+| DOC | `antiword` | `degraded_fallback` | `libreoffice`가 없을 때 text fallback route | 구조 fidelity가 낮을 수 있음 |
+| HWP | `hwp5txt` | `text_route` | enabled이면 text route로 실행 | 구조 parser가 아니라 text route |
+| 공통 실험 후보 | `markitdown` | `experimental` | registry에는 등록돼 있지만 현재 `enabled=false` | active route set에는 포함되지 않음 |
+
+현재 문서 관점에서 해석할 때는 아래 구분이 중요하다.
+
+- 등록됨: 코드상 parser id가 존재하고 runtime status에 나타남
+- enabled: 현재 routing이 실제 선택 가능한 상태
+- baseline 후보: enabled parser 중 포맷별 deterministic baseline selection에 들어가는 상태
+
+한 줄 요약:
+
+- PDF는 `docling`, `pypdf`, `pdfplumber`가 등록돼 있고 현재 baseline 후보는 `docling`, `pypdf`다
+- DOCX는 `python-docx`만 등록/사용한다
+- XLSX는 `openpyxl`만 등록/사용한다
+- DOC는 `libreoffice`, `antiword`가 등록돼 있다
+- HWP는 `hwp5txt`가 등록돼 있다
+- `markitdown`은 현재 실험 후보로만 등록돼 있다
+
 ## 5. Inspection 단계는 실제로 무엇을 하는가
 
 inspection은 parser를 실행해서 최종 Markdown 텍스트를 만드는 단계가 아니다.
