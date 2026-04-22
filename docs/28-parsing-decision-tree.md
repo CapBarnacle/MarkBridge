@@ -39,11 +39,7 @@
 
 ```mermaid
 flowchart TD
-    A[Parse Request] --> B{Source Kind}
-    B -->|Upload| C[Save Uploaded File]
-    B -->|S3| D[Download S3 Object]
-    C --> E[Resolve Document Format]
-    D --> E
+    A[Parse Request] --> E[Resolve Document Format]
     E --> F{Supported Suffix}
     F -->|No| G[Reject Request]
     F -->|Yes| H[Run Deterministic Inspection]
@@ -77,7 +73,7 @@ flowchart TD
 
 | rule_id | applies_to | trigger | action | risk | code_ref |
 |---|---|---|---|---|---|
-| `flow.source.upload_or_s3` | 전체 flow | source kind이 upload 또는 S3 | 획득 방식만 다르게 처리하고 이후 pipeline은 공통 진행 | source acquisition 오류가 parsing 전단에서 실패를 만든다 | [src/markbridge/api/app.py](/home/intak.kim/project/MarkBridge/src/markbridge/api/app.py), [src/markbridge/api/service.py](/home/intak.kim/project/MarkBridge/src/markbridge/api/service.py) |
+| `flow.source.prepare_input` | 전체 flow | parse 대상 입력이 시스템에 전달됨 | 입력 준비 방식과 무관하게 이후 pipeline은 공통 진행 | source acquisition 오류가 parsing 전단에서 실패를 만든다 | [src/markbridge/api/app.py](/home/intak.kim/project/MarkBridge/src/markbridge/api/app.py), [src/markbridge/api/service.py](/home/intak.kim/project/MarkBridge/src/markbridge/api/service.py) |
 | `flow.format.supported_suffix_gate` | 전체 flow | suffix가 지원 목록에 포함됨 | parse pipeline 진입 허용 | suffix 기반 판별이라 잘못된 확장자 문서엔 취약할 수 있음 | [src/markbridge/api/service.py](/home/intak.kim/project/MarkBridge/src/markbridge/api/service.py) |
 | `flow.inspection.before_parse` | 전체 flow | parse request 수신 후 | inspection을 parser 실행 전에 먼저 수행 | inspection이 완전 품질 판정은 아니므로 routing 보조 신호로만 써야 함 | [src/markbridge/pipeline/orchestrator.py](/home/intak.kim/project/MarkBridge/src/markbridge/pipeline/orchestrator.py), [src/markbridge/inspection/basic.py](/home/intak.kim/project/MarkBridge/src/markbridge/inspection/basic.py) |
 | `flow.render_then_validate` | 전체 flow | parser 결과가 IR로 생성됨 | markdown과 line map을 만들고 그 뒤 validation 수행 | renderer 품질이 validation evidence 매핑에 영향을 준다 | [src/markbridge/pipeline/orchestrator.py](/home/intak.kim/project/MarkBridge/src/markbridge/pipeline/orchestrator.py), [src/markbridge/renderers/markdown.py](/home/intak.kim/project/MarkBridge/src/markbridge/renderers/markdown.py) |
@@ -87,7 +83,7 @@ flowchart TD
 
 ### Source / Format
 
-- upload와 S3는 acquisition 방식만 다르고 이후 pipeline은 동일하다
+- 입력 준비 방식과 무관하게 이후 pipeline은 동일하다
 - 지원 suffix가 아니면 parse가 시작되지 않는다
 
 현재 지원 suffix:
