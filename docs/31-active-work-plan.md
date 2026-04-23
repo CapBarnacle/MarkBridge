@@ -11,6 +11,21 @@
 - 작업을 완료하면 이 문서의 상태를 먼저 갱신한다.
 - 세부 설계가 길어지면 별도 문서로 분리하고, 이 문서에는 링크와 현재 상태만 남긴다.
 
+## 현재 작업 브랜치
+
+| 항목 | 값 |
+|---|---|
+| active branch | `feature/document-ir-rag-handoff` |
+| branch base/current docs commit | `7bcc002 Add active work plan and IR chunking readiness docs` |
+| main/origin 기준 | 브랜치 생성 시점에 `main`, `origin/main`, `HEAD` 모두 `7bcc002` |
+| pre-existing non-doc WIP | `stash@{0}: On document-ir-rag-handoff: pre-existing non-doc changes before document-ir-rag-handoff` |
+
+주의:
+
+- 이 브랜치는 `DocumentIR` 기반 RAG handoff와 chunking 설계를 진행하기 위한 작업 브랜치다.
+- 이전에 있던 비문서 WIP는 stash에 보존되어 있으므로, 명시적으로 재개하기 전까지 pop하지 않는다.
+- 다음 작업도 우선 문서/설계 기준을 이 브랜치에서 정리한 뒤 구현으로 넘어간다.
+
 ## 현재 기준 문서
 
 | 문서 | 역할 |

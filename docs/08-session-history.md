@@ -9,6 +9,39 @@ It is intentionally biased toward "what is true now" rather than preserving ever
 - Use that document first when deciding the next task.
 - Treat older plan documents as historical context unless `docs/31-active-work-plan.md` explicitly points to them as active detail.
 
+## Resume Prep on April 23, 2026
+
+- Current branch: `feature/document-ir-rag-handoff`.
+- Branch base/current docs commit: `7bcc002 Add active work plan and IR chunking readiness docs`.
+- At the time this handoff note was written, `HEAD`, `main`, and `origin/main` all pointed to `7bcc002`.
+- Working tree was clean before this history update.
+- Pre-existing non-doc WIP was intentionally preserved in git stash:
+  - `stash@{0}: On document-ir-rag-handoff: pre-existing non-doc changes before document-ir-rag-handoff`
+- Do not pop that stash unless intentionally resuming the older non-doc WIP.
+
+Current restart docs added in the latest parsing/RAG planning pass:
+
+- [docs/31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md)
+- [docs/32-document-ir-chunking-readiness.md](/home/intak.kim/project/MarkBridge/docs/32-document-ir-chunking-readiness.md)
+
+Current architectural decision:
+
+- `DocumentIR` generation is the shared parsing core.
+- After `DocumentIR`, the pipeline splits into two branches.
+- Branch A preserves the existing Markdown rendering, line map, canonical block JSON, and `/exports/parse-markdown` API.
+- Branch B is the new internal RAG pipeline path: `DocumentIR` to chunk source, chunking, embedding/indexing, and retrieval.
+- Own RAG chunking should not parse canonical Markdown as its primary input.
+- Parser-known source facts should be preserved in `DocumentIR`; chunking-derived facts should be created in the chunking model.
+- Canonical Markdown remains necessary for external delivery, audit, UI, and existing API compatibility.
+
+Next work should start here:
+
+- Run a `DocumentIR` chunking readiness audit.
+- Create representative `DocumentIR` dumps for PDF, DOCX, XLSX, DOC, and HWP routes where available.
+- Build a coverage matrix for block kinds, heading metadata, table metadata, and source span coverage.
+- Verify chunk text can be generated from `DocumentIR` without reparsing Markdown.
+- Decide P1 IR enrichments: stable `parser_block_ref`, broader `BlockIR.source` coverage, normalized heading metadata, table `header_depth`/caption/title, and validation issue links.
+
 ## Resume Prep on April 16, 2026
 
 - Reconfirmed current orchestration flow in `src/markbridge/api/service.py`:
