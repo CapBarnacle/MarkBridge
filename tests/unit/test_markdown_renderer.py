@@ -172,3 +172,20 @@ def test_render_markdown_with_map_carries_page_number_from_block_metadata() -> N
 
     assert rendered.line_map[0].page_number == 3
     assert rendered.line_map[2].page_number == 3
+
+
+def test_render_markdown_uses_structured_heading_level_field() -> None:
+    document = DocumentIR(
+        source_format=DocumentFormat.DOCX,
+        blocks=(
+            BlockIR(
+                kind=BlockKind.HEADING,
+                text="세부 제목",
+                heading_level=4,
+            ),
+        ),
+    )
+
+    rendered = render_markdown_with_map(document)
+
+    assert rendered.markdown == "#### 세부 제목"

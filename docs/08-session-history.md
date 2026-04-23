@@ -42,6 +42,92 @@ Next work should start here:
 - Verify chunk text can be generated from `DocumentIR` without reparsing Markdown.
 - Decide P1 IR enrichments: stable `parser_block_ref`, broader `BlockIR.source` coverage, normalized heading metadata, table `header_depth`/caption/title, and validation issue links.
 
+## Resume Prep on April 23, 2026 After IR Enrichment and BMT Audit
+
+- The work branch is still `feature/document-ir-rag-handoff`.
+- Current working tree is no longer clean. There are uncommitted code/doc changes for the first `DocumentIR` enrichment pass plus a new audit CLI path.
+- Pre-existing unrelated WIP is still preserved only in `stash@{0}` and must not be mixed with the current IR/chunking work.
+
+Implemented in this pass:
+
+- `DocumentIR` first-pass enrichment:
+  - `BlockIR.parser_block_ref`
+  - `BlockIR.heading_level`
+  - `TableBlockIR.caption`
+  - parser/document metadata normalization
+  - broader `BlockIR.source` population for PDF page, XLSX sheet/row range, and single-page markdown-derived routes
+  - table `header_depth`
+  - table title/caption hint from preceding heading or short caption-like paragraph
+- Markdown rendering still preserves the existing export/API contract based on `block-{index}` refs.
+- New audit command was added:
+  - `PYTHONPATH=src python3 -m markbridge.cli audit-document-ir ...`
+
+New/updated restart docs:
+
+- [docs/31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md)
+- [docs/32-document-ir-chunking-readiness.md](/home/intak.kim/project/MarkBridge/docs/32-document-ir-chunking-readiness.md)
+- [docs/33-bmt-document-ir-audit.md](/home/intak.kim/project/MarkBridge/docs/33-bmt-document-ir-audit.md)
+
+New audit code/tests added in this pass:
+
+- [src/markbridge/audit/document_ir.py](/home/intak.kim/project/MarkBridge/src/markbridge/audit/document_ir.py)
+- [src/markbridge/audit/__init__.py](/home/intak.kim/project/MarkBridge/src/markbridge/audit/__init__.py)
+- [tests/unit/test_document_ir_audit.py](/home/intak.kim/project/MarkBridge/tests/unit/test_document_ir_audit.py)
+
+BMT sample audit was executed from:
+
+- `s3://rag-580075786326-ap-northeast-2/bmt/`
+
+Audit artifacts were written locally under:
+
+- [`.markbridge/audits/document-ir/2026-04-23-bmt/`](/home/intak.kim/project/MarkBridge/.markbridge/audits/document-ir/2026-04-23-bmt)
+
+Key audit conclusions:
+
+- `parser_block_ref` coverage is 100% on all sampled formats.
+- `heading_level` coverage is 100% on heading blocks for all sampled formats.
+- `table_header_depth` and `table_title` are effectively ready for chunking input.
+- XLSX currently has the best `source` coverage.
+- The biggest remaining IR gaps are:
+  - PDF/DOCX/DOC block-level source span
+  - table page range
+  - validation issue to chunk join rules
+
+Current implementation truth after this pass:
+
+- `DocumentIR` is now good enough to begin `ChunkSourceDocument` design and initial chunking work.
+- The correct next step is no longer "more generic parsing improvement first."
+- The correct next step is:
+  - design `DocumentIR -> ChunkSourceDocument`
+  - define validation issue / quality flag joins
+  - only then add narrowly targeted IR/source-span improvements where the handoff model proves they are needed
+
+Current uncommitted work to preserve when resuming:
+
+- code changes in:
+  - `src/markbridge/shared/ir.py`
+  - `src/markbridge/parsers/basic.py`
+  - `src/markbridge/renderers/markdown.py`
+  - `src/markbridge/cli.py`
+  - `src/markbridge/audit/`
+- tests in:
+  - `tests/unit/test_markdown_renderer.py`
+  - `tests/unit/test_pipeline.py`
+  - `tests/unit/test_document_ir_audit.py`
+- docs in:
+  - `docs/31-active-work-plan.md`
+  - `docs/32-document-ir-chunking-readiness.md`
+  - `docs/33-bmt-document-ir-audit.md`
+
+Verification already run in this pass:
+
+- `pytest -q tests/unit/test_markdown_renderer.py tests/unit/test_validators_execution.py tests/unit/test_pipeline.py -k "not test_doc_pipeline_is_held_when_no_route_exists"`
+- `pytest -q tests/unit/test_document_ir_audit.py`
+
+Known caveat:
+
+- `test_doc_pipeline_is_held_when_no_route_exists` remains environment-sensitive because the current runtime has `libreoffice` enabled in this machine, so that old expectation is not a reliable restart assumption.
+
 ## Resume Prep on April 16, 2026
 
 - Reconfirmed current orchestration flow in `src/markbridge/api/service.py`:

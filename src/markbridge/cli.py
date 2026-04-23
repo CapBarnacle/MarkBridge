@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from markbridge.audit import run_document_ir_audit
 from markbridge.api.config import get_settings
 from markbridge.api.service import MarkBridgePipeline
 from markbridge.experiments import run_first_formula_probe
@@ -28,6 +29,12 @@ def build_parser() -> argparse.ArgumentParser:
     probe = subparsers.add_parser("probe-first-formula")
     probe.add_argument("run_dir")
     probe.add_argument("--llm", action="store_true")
+
+    audit_ir = subparsers.add_parser("audit-document-ir")
+    audit_ir.add_argument("inputs", nargs="+")
+    audit_ir.add_argument("--output-dir")
+    audit_ir.add_argument("--include-blocks", action="store_true")
+    audit_ir.add_argument("--parser-hint")
 
     subparsers.add_parser("runtime-status")
 
@@ -58,6 +65,13 @@ def main() -> None:
             Path(args.run_dir),
             settings=get_settings(),
             call_llm=args.llm,
+        )
+    elif args.command == "audit-document-ir":
+        response = run_document_ir_audit(
+            inputs=list(args.inputs),
+            output_dir=Path(args.output_dir) if args.output_dir else None,
+            include_blocks=bool(args.include_blocks),
+            parser_hint=args.parser_hint,
         )
     else:
         from markbridge.routing.runtime import get_runtime_statuses

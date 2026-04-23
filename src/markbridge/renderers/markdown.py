@@ -288,6 +288,11 @@ def _normalize_line_for_matching(text: str) -> str:
 
 
 def _heading_level(block: BlockIR) -> int:
+    if isinstance(block.heading_level, int):
+        return max(1, min(6, block.heading_level))
+    metadata_level = block.metadata.get("heading_level")
+    if isinstance(metadata_level, int):
+        return max(1, min(6, metadata_level))
     metadata_level = block.metadata.get("level")
     if isinstance(metadata_level, int):
         return max(1, min(6, metadata_level))

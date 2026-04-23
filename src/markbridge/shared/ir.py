@@ -45,6 +45,8 @@ class BlockIR:
     text: str | None = None
     source: SourceSpan | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    parser_block_ref: str | None = None
+    heading_level: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +76,7 @@ class TableBlockIR(BlockIR):
     continuation_of: str | None = None
     semantic_type: str | None = None
     confidence: float | None = None
+    caption: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

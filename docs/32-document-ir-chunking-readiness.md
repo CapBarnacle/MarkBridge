@@ -2,6 +2,8 @@
 
 이 문서는 자체 RAG pipeline을 `DocumentIR` 기준으로 구성하기 전에, 현재 IR이 원본 문맥을 embedding에 충분히 살릴 수 있는지 점검하기 위한 기준 문서다.
 
+실제 BMT 샘플 audit snapshot은 [33-bmt-document-ir-audit.md](/home/intak.kim/project/MarkBridge/docs/33-bmt-document-ir-audit.md)를 참고한다.
+
 핵심 목표는 아래와 같다.
 
 - 원본 구조 보존에 필요한 IR 정보 정의
@@ -97,7 +99,7 @@ DocumentIR
 |---|---|---:|---|---|
 | block kind | `BlockIR.kind` 있음 | 높음 | 유지 | chunk boundary 기본 입력 |
 | block text | `BlockIR.text` 있음. table은 cell 중심 | 높음 | 유지 | embedding text 생성 |
-| stable parser block ref | renderer에서 `block-{index}`로 임시 생성 | 높음 | 보강 필요 | chunk/source tracking에 필요 |
+| stable parser block ref | `BlockIR.parser_block_ref` 구현됨 | 높음 | 유지 | 외부 API의 `block-{index}` ref와 별도로 chunk/source tracking에 사용 |
 | source order | `blocks` tuple 순서로 표현 | 높음 | 유지 | section stack 계산 |
 | heading level | heading metadata `level` 일부 있음 | 높음 | 보강/정규화 | PDF/DOCX/XLSX 간 일관성 필요 |
 | heading reason/confidence | DOCX/PDF markdown/XLSX sheet heading 일부 있음 | 중간 | 유지/정규화 | inferred heading 신뢰도 |
@@ -109,11 +111,11 @@ DocumentIR
 
 | 필요한 정보 | 현재 IR 상태 | chunking 중요도 | 보강 판단 | 비고 |
 |---|---|---:|---|---|
-| page number | PDF pypdf/pdfplumber metadata, docling single-page 일부, `SourceSpan.page` 거의 미사용 | 높음 | 보강 필요 | citation과 retrieval evidence |
-| page range | `TableBlockIR.page_range` 필드는 있으나 거의 채워지지 않음 | 높음 | 보강 필요 | multi-page chunk 표현 |
-| sheet | XLSX metadata에 있음 | 높음 | 유지/정규화 | spreadsheet citation |
+| page number | PDF route와 single-page markdown-derived route에서 `BlockIR.source.page` 사용 확대 | 높음 | 유지/추가 audit | citation과 retrieval evidence |
+| page range | single-page markdown table route에서 우선 채움 | 높음 | 추가 보강 후보 | multi-page chunk 표현 |
+| sheet | XLSX에서 `BlockIR.source.sheet`와 table source row range 반영 | 높음 | 유지 | spreadsheet citation |
 | source line | Markdown-derived `markdown_line_numbers` 있음 | 중간 | export reference로 유지 | 원본 line은 아님 |
-| source span object | `BlockIR.source` 필드는 있으나 parser에서 거의 채우지 않음 | 높음 | 보강 필요 | IR-native traceability |
+| source span object | `BlockIR.source`가 일부 route에서 실제 사용되기 시작함 | 높음 | 계속 확대 | IR-native traceability |
 | canonical markdown line range | line map sidecar에 있음 | 중간 | sidecar 유지 | UI/export 연결 |
 
 ### 4.4 table 정보
@@ -123,10 +125,10 @@ DocumentIR
 | table id | DOCX/XLSX/markdown table에서 있음 | 높음 | 유지 | table chunk tracking |
 | cells row/col | `TableCellIR`에 있음 | 높음 | 유지 | table-preserving chunking 핵심 |
 | header flag | `is_header` 있음. 대부분 first row 기준 | 높음 | 보강 후보 | multi-row header 한계 |
-| header depth | 필드는 있으나 거의 채워지지 않음 | 높음 | 보강 필요 | 큰 table split 시 header repeat |
+| header depth | markdown/docx/xlsx route에서 기본값 채움 | 높음 | 유지/고도화 | 큰 table split 시 header repeat |
 | merged cells 여부 | boolean 일부 있음 | 중간 | 유지/보강 | span 자체는 없음 |
 | row/column span | 필드는 있음. 대부분 default 1 | 중간 | 보강 후보 | merged range 복원 시 필요 |
-| table title/caption | `title`은 generic 값이 많음 | 중간 | 보강 필요 | retrieval context에 중요 |
+| table title/caption | heading/preceding paragraph 기반 hint 일부 반영 | 중간 | 추가 audit 필요 | retrieval context에 중요 |
 | row/column count | 직접 필드는 없음. cells에서 계산 가능 | 중간 | chunking에서 파생 | 파생 가능 |
 | cell address / formula / number format | 없음 | 중간 | XLSX 보강 후보 | spreadsheet 품질 향상 |
 | surrounding heading | 없음 | 높음 | chunking에서 파생 | section path로 연결 |
@@ -154,6 +156,31 @@ DocumentIR
 
 ## 5. 보강 우선순위
 
+### 5.0 April 23, 2026 구현 반영 상태
+
+이번 구현에서 먼저 반영한 항목:
+
+| 항목 | 현재 상태 | 반영 내용 |
+|---|---|---|
+| stable `parser_block_ref` | 구현됨 | 모든 block에 parser 기준 stable ref를 채움 |
+| heading metadata 정규화 | 구현됨 | `heading_level` structured field와 normalized metadata를 함께 채움 |
+| `BlockIR.source` 사용 확대 | 부분 구현 | PDF page, XLSX sheet/row range, single-page markdown-derived route에 source span 반영 |
+| table `header_depth` | 구현됨 | markdown/docx/xlsx table에 기본 header depth 채움 |
+| table title/caption 개선 | 부분 구현 | preceding heading / short caption paragraph 기반 title/caption hint 반영 |
+
+아직 남아 있는 것:
+
+- representative sample dump 기반 coverage audit
+- DOCX source span의 더 강한 위치 보존
+- validation issue와 block/chunk join 규칙 구체화
+- `ChunkSourceDocument` 안정 모델 설계
+
+업데이트:
+
+- BMT 샘플 6건에 대한 첫 audit는 완료했고 결과는 `docs/33`에 정리했다.
+- audit 결과상 `parser_block_ref`, `heading_level`, `table_header_depth`, `table_title`은 초기 목표를 충족했다.
+- 가장 큰 gap은 PDF/DOCX/DOC의 block-level source span과 table page range다.
+
 ### P0. Chunking 전에 먼저 확인해야 하는 것
 
 | 작업 | 이유 | 산출물 |
@@ -166,11 +193,11 @@ DocumentIR
 
 | 보강 정보 | 대상 | 이유 |
 |---|---|---|
-| stable `parser_block_ref` | 모든 block | validation/chunk/source tracking 안정화 |
-| `BlockIR.source` 사용 확대 | PDF/DOCX/XLSX | page/sheet/source span을 IR-native로 보존 |
-| heading metadata 정규화 | PDF/DOCX/XLSX | section hierarchy 계산 안정화 |
-| table `header_depth` | DOCX/XLSX/table routes | 큰 table split 시 header 반복에 필요 |
-| table title/caption 개선 | DOCX/XLSX/PDF markdown tables | table chunk retrieval context 향상 |
+| stable `parser_block_ref` | 모든 block | 구현 완료. validation/chunk/source tracking 안정화 |
+| `BlockIR.source` 사용 확대 | PDF/DOCX/XLSX | 부분 구현. page/sheet/source span을 IR-native로 보존 |
+| heading metadata 정규화 | PDF/DOCX/XLSX | 구현 완료. section hierarchy 계산 안정화 |
+| table `header_depth` | DOCX/XLSX/table routes | 구현 완료. 큰 table split 시 header 반복에 필요 |
+| table title/caption 개선 | DOCX/XLSX/PDF markdown tables | 부분 구현. table chunk retrieval context 향상 |
 | validation issue join 규칙 | sidecar/chunk model | quality-aware retrieval에 필요 |
 
 ### P2. 샘플 평가 후 결정할 정보

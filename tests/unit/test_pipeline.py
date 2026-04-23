@@ -47,6 +47,8 @@ def test_docx_pipeline_promotes_numbered_plain_paragraph_to_heading() -> None:
     assert first_block.kind.value == "heading"
     assert first_block.metadata["chunk_boundary_reason"] == "heading_pattern.numbered"
     assert first_block.metadata["level"] == 2
+    assert first_block.heading_level == 2
+    assert first_block.parser_block_ref == "python-docx:heading:0000"
 
 
 def test_docx_pipeline_uses_deeper_heading_level_for_decimal_numbering() -> None:
@@ -292,6 +294,66 @@ def test_xlsx_pipeline_emits_heading_for_each_sheet() -> None:
     markdown = result.metadata["markdown"]
     assert "## Summary" in markdown
     assert "## Details" in markdown
+
+
+def test_pipeline_enriches_document_ir_metadata_for_chunking_handoff() -> None:
+    doc = DocxDocument()
+    doc.add_paragraph("보장내용")
+    doc.add_paragraph("설명 본문")
+    with NamedTemporaryFile(suffix=".docx", delete=False) as handle:
+        path = Path(handle.name)
+    doc.save(path)
+
+    result = run_pipeline(
+        PipelineRequest(
+            source_path=path,
+            document_format=DocumentFormat.DOCX,
+            options={"source_uri": "file:///tmp/sample.docx", "source_name": "sample.docx"},
+        )
+    )
+
+    assert result.document.metadata["parser_id"] == "python-docx"
+    assert result.document.metadata["source_name"] == "sample.docx"
+    assert result.document.metadata["source_uri"] == "file:///tmp/sample.docx"
+    assert result.document.metadata["source_format"] == "docx"
+
+
+def test_xlsx_pipeline_populates_source_span_and_header_depth_for_table_block() -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Benefits"
+    sheet["A1"] = "항목"
+    sheet["B1"] = "값"
+    sheet["A2"] = "보험료"
+    sheet["B2"] = 100
+    with NamedTemporaryFile(suffix=".xlsx", delete=False) as handle:
+        path = Path(handle.name)
+    workbook.save(path)
+
+    result = run_pipeline(PipelineRequest(source_path=path, document_format=DocumentFormat.XLSX))
+
+    heading_block = result.document.blocks[0]
+    table_block = next(block for block in result.document.blocks if block.kind.value == "table")
+    assert heading_block.source is not None
+    assert heading_block.source.sheet == "Benefits"
+    assert heading_block.heading_level == 2
+    assert table_block.source is not None
+    assert table_block.source.sheet == "Benefits"
+    assert table_block.source.start_line == 1
+    assert table_block.source.end_line == 2
+    assert table_block.header_depth == 1
+    assert table_block.title == "Benefits"
+
+
+def test_markdown_table_ir_uses_preceding_heading_as_title_context() -> None:
+    blocks = _blocks_from_markdown("## 보장내용\n\n| 항목 | 값 |\n| --- | --- |\n| 보험료 | 100 |", default_page_number=1)
+
+    table_block = next(block for block in blocks if block.kind.value == "table")
+
+    assert table_block.title == "보장내용"
+    assert table_block.metadata["title_source"] == "preceding_heading"
+    assert table_block.header_depth == 1
+    assert table_block.page_range == (1, 1)
 
 
 def test_markdown_heading_blocks_carry_chunk_boundary_metadata() -> None:

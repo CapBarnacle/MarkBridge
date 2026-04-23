@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from functools import lru_cache
 from pathlib import Path
 import re
@@ -23,28 +24,37 @@ from markbridge.parsers.conversion import (
     extract_doc_text_with_antiword,
     extract_hwp_text_with_hwp5txt,
 )
-from markbridge.shared.ir import BlockIR, BlockKind, DocumentFormat, DocumentIR, TableBlockIR, TableCellIR
+from markbridge.shared.ir import BlockIR, BlockKind, DocumentFormat, DocumentIR, SourceSpan, TableBlockIR, TableCellIR
 
 
 def parse_with_current_runtime(request: ParseRequest, parser_id: str) -> ParseResult:
     if parser_id == "docling":
-        return _parse_pdf_with_docling(request)
+        result = _parse_pdf_with_docling(request)
+        return _finalize_parse_result(result, request=request)
     if parser_id == "markitdown":
-        return _parse_with_markitdown(request)
+        result = _parse_with_markitdown(request)
+        return _finalize_parse_result(result, request=request)
     if parser_id == "pdfplumber":
-        return _parse_pdf_with_pdfplumber(request)
+        result = _parse_pdf_with_pdfplumber(request)
+        return _finalize_parse_result(result, request=request)
     if parser_id == "pypdf":
-        return _parse_pdf(request)
+        result = _parse_pdf(request)
+        return _finalize_parse_result(result, request=request)
     if parser_id == "python-docx":
-        return _parse_docx(request)
+        result = _parse_docx(request)
+        return _finalize_parse_result(result, request=request)
     if parser_id == "openpyxl":
-        return _parse_xlsx(request)
+        result = _parse_xlsx(request)
+        return _finalize_parse_result(result, request=request)
     if parser_id == "libreoffice":
-        return _parse_doc_via_conversion(request)
+        result = _parse_doc_via_conversion(request)
+        return _finalize_parse_result(result, request=request)
     if parser_id == "antiword":
-        return _parse_doc_with_antiword(request)
+        result = _parse_doc_with_antiword(request)
+        return _finalize_parse_result(result, request=request)
     if parser_id == "hwp5txt":
-        return _parse_hwp_with_hwp5txt(request)
+        result = _parse_hwp_with_hwp5txt(request)
+        return _finalize_parse_result(result, request=request)
     raise ValueError(f"Unsupported parser route: {parser_id}")
 
 
@@ -58,6 +68,7 @@ def _parse_pdf(request: ParseRequest) -> ParseResult:
                 BlockIR(
                     kind=BlockKind.PARAGRAPH,
                     text=text,
+                    source=SourceSpan(page=page_index),
                     metadata={"page": page_index},
                 )
             )
@@ -83,6 +94,7 @@ def _parse_pdf_with_pdfplumber(request: ParseRequest) -> ParseResult:
                     BlockIR(
                         kind=BlockKind.PARAGRAPH,
                         text=text,
+                        source=SourceSpan(page=page_index),
                         metadata={"page": page_index, "source": "pdfplumber.extract_text"},
                     )
                 )
@@ -144,6 +156,7 @@ def _parse_docx(request: ParseRequest) -> ParseResult:
     blocks: list[BlockIR] = []
     ordered_items = list(_iter_docx_block_items(doc))
     table_index = 0
+    last_heading_text: str | None = None
 
     for item_index, item in enumerate(ordered_items):
         if isinstance(item, Paragraph):
@@ -178,15 +191,21 @@ def _parse_docx(request: ParseRequest) -> ParseResult:
                     BlockIR(
                         kind=BlockKind.HEADING,
                         text=text,
+                        heading_level=int(heading_hint["level"]),
                         metadata={
                             "level": heading_hint["level"],
+                            "heading_level": heading_hint["level"],
+                            "heading_reason": heading_hint["reason"],
+                            "heading_confidence": heading_hint["confidence"],
                             "chunk_boundary_candidate": True,
                             "chunk_boundary_reason": heading_hint["reason"],
                             "chunk_boundary_confidence": heading_hint["confidence"],
                             "chunk_boundary_materialized": True,
+                            **({"source_style_name": item.style.name} if item.style and item.style.name else {}),
                         },
                     )
                 )
+                last_heading_text = text
                 continue
             blocks.append(BlockIR(kind=BlockKind.PARAGRAPH, text=text))
             continue
@@ -198,6 +217,16 @@ def _parse_docx(request: ParseRequest) -> ParseResult:
         if _is_docx_layout_table(layout_rows):
             blocks.extend(_blocks_from_docx_layout_rows(layout_rows))
             continue
+        previous_paragraph_text = _adjacent_nonempty_docx_paragraph_text(
+            ordered_items,
+            start_index=item_index,
+            reverse=True,
+        )
+        table_title, table_caption, title_source = _table_title_from_context(
+            preceding_text=previous_paragraph_text,
+            fallback_heading=last_heading_text,
+            generated_title=f"Table {table_index}",
+        )
         normalized_rows, applied_carry_forward = _normalize_docx_table_rows(item)
         cells: list[TableCellIR] = []
         for row_idx, row_values in enumerate(normalized_rows):
@@ -209,9 +238,14 @@ def _parse_docx(request: ParseRequest) -> ParseResult:
                 TableBlockIR(
                     cells=tuple(cells),
                     table_id=f"docx-table-{table_index}",
-                    title=f"Table {table_index}",
+                    title=table_title,
+                    caption=table_caption,
+                    header_depth=1 if any(cell.row_index == 0 and cell.text.strip() for cell in cells) else 0,
                     merged_cells=applied_carry_forward,
-                    metadata={"docx_carry_forward": applied_carry_forward},
+                    metadata={
+                        "docx_carry_forward": applied_carry_forward,
+                        "title_source": title_source,
+                    },
                 )
             )
 
@@ -252,7 +286,12 @@ def _parse_xlsx(request: ParseRequest) -> ParseResult:
                 BlockIR(
                     kind=BlockKind.HEADING,
                     text=sheet.title.strip(),
+                    source=SourceSpan(sheet=sheet.title),
+                    heading_level=2,
                     metadata={
+                        "heading_level": 2,
+                        "heading_reason": "sheet_name",
+                        "heading_confidence": 1.0,
                         "chunk_boundary_candidate": True,
                         "chunk_boundary_reason": "sheet_name",
                         "chunk_boundary_confidence": 1.0,
@@ -262,10 +301,14 @@ def _parse_xlsx(request: ParseRequest) -> ParseResult:
                 )
             )
         cells: list[TableCellIR] = []
+        min_row_index: int | None = None
+        max_row_index: int | None = None
         for row_idx, row in enumerate(sheet.iter_rows(values_only=True)):
             for col_idx, value in enumerate(row):
                 if value is None:
                     continue
+                min_row_index = row_idx if min_row_index is None else min(min_row_index, row_idx)
+                max_row_index = row_idx if max_row_index is None else max(max_row_index, row_idx)
                 cells.append(
                     TableCellIR(
                         row_index=row_idx,
@@ -281,6 +324,12 @@ def _parse_xlsx(request: ParseRequest) -> ParseResult:
                     cells=tuple(cells),
                     table_id=f"xlsx-table-{table_index}",
                     title=sheet.title,
+                    header_depth=1 if any(cell.row_index == 0 and cell.text.strip() for cell in cells) else 0,
+                    source=SourceSpan(
+                        sheet=sheet.title,
+                        start_line=(min_row_index + 1) if min_row_index is not None else None,
+                        end_line=(max_row_index + 1) if max_row_index is not None else None,
+                    ),
                     metadata={"sheet": sheet.title},
                     merged_cells=bool(sheet.merged_cells.ranges),
                 )
@@ -302,9 +351,18 @@ def _parse_doc_via_conversion(request: ParseRequest) -> ParseResult:
             options=dict(request.options),
         )
         result = _parse_docx(converted_request)
+        document = replace(
+            result.document,
+            source_format=DocumentFormat.DOC,
+            metadata={
+                **result.document.metadata,
+                "converted_from": "doc",
+                "conversion_backend": "libreoffice",
+            },
+        )
         return ParseResult(
             parser_id="libreoffice",
-            document=result.document,
+            document=document,
             warnings=result.warnings + ((conversion.message,) if conversion.message else ()),
             metadata={"conversion_output_path": str(conversion.output_path)},
         )
@@ -361,8 +419,11 @@ def _blocks_from_markdown(markdown: str, *, default_page_number: int | None = No
     paragraph_buffer: list[tuple[str, int]] = []
     table_buffer: list[tuple[str, int]] = []
     table_index = 0
+    last_heading_text: str | None = None
+    last_paragraph_text: str | None = None
 
     def flush_paragraph() -> None:
+        nonlocal last_paragraph_text
         if not paragraph_buffer:
             return
         line_numbers = [line_number for _, line_number in paragraph_buffer]
@@ -373,12 +434,14 @@ def _blocks_from_markdown(markdown: str, *, default_page_number: int | None = No
                 BlockIR(
                     kind=BlockKind.PARAGRAPH,
                     text=text,
+                    source=SourceSpan(page=default_page_number) if default_page_number is not None else None,
                     metadata=_markdown_block_metadata(line_numbers, default_page_number=default_page_number),
                 )
             )
+            last_paragraph_text = text
 
     def flush_table() -> None:
-        nonlocal table_index
+        nonlocal table_index, last_paragraph_text
         if not table_buffer:
             return
         line_numbers = [line_number for _, line_number in table_buffer]
@@ -406,14 +469,24 @@ def _blocks_from_markdown(markdown: str, *, default_page_number: int | None = No
                     )
             data_row_index += 1
         if cells:
+            table_title, table_caption, title_source = _table_title_from_context(
+                preceding_text=last_paragraph_text,
+                fallback_heading=last_heading_text,
+                generated_title=f"Table {table_index}",
+            )
             blocks.append(
                 TableBlockIR(
                     cells=tuple(cells),
                     table_id=f"docling-table-{table_index}",
-                    title=f"Table {table_index}",
+                    title=table_title,
+                    caption=table_caption,
+                    header_depth=1,
+                    page_range=(default_page_number, default_page_number) if default_page_number is not None else None,
+                    source=SourceSpan(page=default_page_number) if default_page_number is not None else None,
                     merged_cells=len(set(row_lengths)) > 1,
                     metadata={
                         "source": "markdown_table",
+                        "title_source": title_source,
                         "row_lengths": row_lengths,
                         **_markdown_block_metadata(line_numbers, default_page_number=default_page_number),
                     },
@@ -440,8 +513,13 @@ def _blocks_from_markdown(markdown: str, *, default_page_number: int | None = No
                 BlockIR(
                     kind=BlockKind.HEADING,
                     text=stripped[level:].strip(),
+                    source=SourceSpan(page=default_page_number) if default_page_number is not None else None,
+                    heading_level=level,
                     metadata={
                         "level": level,
+                        "heading_level": level,
+                        "heading_reason": "markdown_heading",
+                        "heading_confidence": 1.0,
                         "chunk_boundary_candidate": True,
                         "chunk_boundary_reason": "markdown_heading",
                         "chunk_boundary_confidence": 1.0,
@@ -450,6 +528,8 @@ def _blocks_from_markdown(markdown: str, *, default_page_number: int | None = No
                     },
                 )
             )
+            last_heading_text = stripped[level:].strip()
+            last_paragraph_text = None
             continue
         if stripped.startswith(("- ", "* ")):
             flush_paragraph()
@@ -457,6 +537,7 @@ def _blocks_from_markdown(markdown: str, *, default_page_number: int | None = No
                 BlockIR(
                     kind=BlockKind.LIST,
                     text=stripped[2:].strip(),
+                    source=SourceSpan(page=default_page_number) if default_page_number is not None else None,
                     metadata=_markdown_block_metadata([line_number], default_page_number=default_page_number),
                 )
             )
@@ -482,6 +563,115 @@ def _markdown_block_metadata(line_numbers: list[int], *, default_page_number: in
     if default_page_number is not None:
         metadata["page_number"] = default_page_number
     return metadata
+
+
+def _finalize_parse_result(result: ParseResult, *, request: ParseRequest) -> ParseResult:
+    document = _finalize_document_ir(result.document, parser_id=result.parser_id, request=request)
+    return replace(result, document=document)
+
+
+def _finalize_document_ir(document: DocumentIR, *, parser_id: str, request: ParseRequest) -> DocumentIR:
+    metadata = dict(document.metadata)
+    metadata.setdefault("parser_id", parser_id)
+    metadata.setdefault("source_name", str(request.options.get("source_name") or Path(request.source_path).name))
+    metadata.setdefault("source_path", str(request.source_path))
+    metadata.setdefault("source_format", document.source_format.value)
+    source_uri = request.options.get("source_uri")
+    if source_uri is not None:
+        metadata.setdefault("source_uri", str(source_uri))
+    blocks = tuple(
+        _finalize_block_ir(block, index=index, parser_id=parser_id)
+        for index, block in enumerate(document.blocks)
+    )
+    return replace(document, blocks=blocks, metadata=metadata)
+
+
+def _finalize_block_ir(block: BlockIR, *, index: int, parser_id: str) -> BlockIR:
+    metadata = dict(block.metadata)
+    parser_block_ref = block.parser_block_ref or str(metadata.get("parser_block_ref") or f"{parser_id}:{block.kind.value}:{index:04d}")
+    metadata.setdefault("parser_block_ref", parser_block_ref)
+
+    source = block.source
+    if source is None:
+        page = metadata.get("page")
+        if not isinstance(page, int):
+            page = metadata.get("page_number")
+        sheet = metadata.get("sheet")
+        if isinstance(page, int) or isinstance(sheet, str):
+            source = SourceSpan(
+                page=page if isinstance(page, int) else None,
+                sheet=sheet if isinstance(sheet, str) else None,
+            )
+
+    heading_level = block.heading_level
+    if block.kind is BlockKind.HEADING:
+        normalized_level = metadata.get("heading_level")
+        if not isinstance(normalized_level, int):
+            normalized_level = metadata.get("level")
+        if isinstance(normalized_level, int):
+            heading_level = normalized_level
+            metadata.setdefault("heading_level", normalized_level)
+            metadata.setdefault("level", normalized_level)
+        metadata.setdefault("heading_reason", metadata.get("chunk_boundary_reason"))
+        metadata.setdefault("heading_confidence", metadata.get("chunk_boundary_confidence"))
+
+    if isinstance(block, TableBlockIR):
+        title = block.title
+        if title is None and metadata.get("title") is not None:
+            title = str(metadata.get("title"))
+        caption = block.caption
+        if caption is None and metadata.get("caption") is not None:
+            caption = str(metadata.get("caption"))
+        page_range = block.page_range
+        if page_range is None and source is not None and source.page is not None:
+            page_range = (source.page, source.page)
+        header_depth = block.header_depth
+        if header_depth == 0 and any(cell.row_index == 0 and cell.text.strip() for cell in block.cells):
+            header_depth = 1
+        return replace(
+            block,
+            source=source,
+            metadata=metadata,
+            parser_block_ref=parser_block_ref,
+            heading_level=heading_level,
+            title=title,
+            caption=caption,
+            header_depth=header_depth,
+            page_range=page_range,
+        )
+
+    return replace(
+        block,
+        source=source,
+        metadata=metadata,
+        parser_block_ref=parser_block_ref,
+        heading_level=heading_level,
+    )
+
+
+def _table_title_from_context(
+    *,
+    preceding_text: str | None,
+    fallback_heading: str | None,
+    generated_title: str,
+) -> tuple[str, str | None, str]:
+    if preceding_text:
+        normalized = " ".join(preceding_text.split())
+        if _looks_like_table_caption(normalized):
+            return normalized, normalized, "preceding_paragraph"
+    if fallback_heading:
+        return fallback_heading, None, "preceding_heading"
+    return generated_title, None, "generated"
+
+
+def _looks_like_table_caption(text: str) -> bool:
+    if not text:
+        return False
+    if len(text) > 80:
+        return False
+    if any(punctuation in text for punctuation in ("다.", "요.", "? ", "! ")):
+        return False
+    return True
 
 
 _NUMBERED_HEADING_RE = re.compile(r"^(?:\d+\)|\d+(?:\.\d+){0,3}\.?|[IVXLCM]+\.[)]?|[A-Z]\.[)]?|[가-하]\.)\s+\S")
