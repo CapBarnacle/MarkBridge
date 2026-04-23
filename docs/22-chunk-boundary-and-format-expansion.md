@@ -1,5 +1,11 @@
 # 22. Chunk Boundary and Legacy Format Expansion
 
+Status note:
+
+- This document is an earlier planning note for chunk boundaries and legacy formats.
+- Use [31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md) for the current task list.
+- Some items described below have since been implemented or reframed in the current runtime docs.
+
 ## Purpose
 
 This document captures two near-term priorities:
@@ -46,13 +52,13 @@ Implication:
 Current baseline:
 
 - `python-docx` reads paragraphs and tables directly
-- a paragraph becomes `BlockKind.HEADING` only when its style name contains `Heading`
-- all other text becomes plain paragraph blocks
+- a paragraph becomes `BlockKind.HEADING` by Word heading style or by conservative heading heuristics
+- all other text becomes paragraph/list/note/table blocks depending on parser rules
 
 Implication:
 
 - documents with correct heading styles already produce `##` boundaries
-- documents that visually look like headings but are stored as plain paragraphs lose chunk-friendly structure
+- documents that visually look like headings but are stored as plain paragraphs are partially handled by heuristics, but false negatives can remain
 
 Typical miss cases:
 
@@ -65,13 +71,13 @@ Typical miss cases:
 Current baseline:
 
 - `openpyxl` builds table blocks from sheet cells
-- output is structurally useful as a table, but chunk boundaries are weak
-- sheet names exist in metadata, but are not consistently surfaced as Markdown heading anchors
+- output is structurally useful as a table
+- sheet names are materialized as heading blocks before sheet table content
 
 Implication:
 
-- downstream chunkers do not get strong section boundaries per sheet or per logical table region
-- retrieval can still work, but chunk segmentation is less controllable
+- downstream chunkers get at least sheet-level section boundaries
+- finer-grained table-region boundaries are still future work
 
 ### DOC
 
@@ -90,12 +96,13 @@ Implication:
 Current baseline:
 
 - intake accepts `.hwp`
-- inspection emits an explicit warning
-- runtime route set is empty
+- inspection can check `hwp5txt` readiness
+- runtime has an `hwp5txt` text-route scaffold
+- execution still depends on command availability and route policy
 
 Implication:
 
-- `.hwp` is still a true implementation gap, not just an environment gap
+- `.hwp` is no longer a complete scaffold gap, but structural HWP parsing remains a strategy decision
 
 ## Design Goal for Chunk Boundaries
 

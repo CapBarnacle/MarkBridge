@@ -2,6 +2,12 @@
 
 이 문서는 다음 세션에서 빠르게 재개하기 위한 짧은 브리프다.
 
+상태 메모:
+
+- 이 문서는 repair/resolution 중심의 과거 resume 기록이다.
+- 현재 작업 우선순위와 해야 할 일 목록은 [31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md)를 기준으로 한다.
+- 아래 내용 중 일부는 이후 구현과 문서화로 완료됐거나 재정의됐을 수 있다.
+
 ## 현재 상태
 
 - 프로젝트 목표가 다시 정리됨

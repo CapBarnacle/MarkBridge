@@ -2,6 +2,12 @@
 
 This backlog translates the current design into an ordered implementation path.
 
+Status note:
+
+- This document is an older backlog snapshot.
+- Use [31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md) as the current task list and planning anchor.
+- Items below may include work that has since been completed or reframed.
+
 ## Guiding Principle
 - Keep parser selection quality-first under current runtime constraints.
 - Make every pipeline step observable.
@@ -64,7 +70,11 @@ This backlog translates the current design into an ordered implementation path.
 - benchmark deterministic recovery vs LLM recovery
 - add additional parser candidates only after benchmark and enablement review
 
-## Immediate Next Tasks
+## Historical Immediate Next Tasks
+
+The section below is retained for historical context.
+For current planning, use [31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md).
+
 ### Track A. Chunk-Boundary Quality
 - improve `docx` heading detection beyond Word style-only promotion
 - emit stable `##` boundaries for `xlsx` at least at sheet level

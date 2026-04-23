@@ -1,5 +1,11 @@
 # 21. Resolution-First Execution Plan
 
+Status note:
+
+- This document preserves the resolution-first design context.
+- Use [31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md) as the current task list and planning anchor.
+- The UI residue and patch anchoring items remain relevant, but priority should be read through the active work plan.
+
 ## Purpose
 
 This plan aligns implementation with the clarified project goal:

@@ -1,5 +1,11 @@
 # 23. Chunk Boundary and Legacy Format Execution Plan
 
+Status note:
+
+- This document is an earlier execution plan.
+- Use [31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md) as the current task list and planning anchor.
+- Keep this document only for background context and older workstream detail.
+
 ## Purpose
 
 This plan turns the current priority request into an execution sequence:

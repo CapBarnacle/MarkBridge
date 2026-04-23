@@ -3,6 +3,12 @@
 This document is the restart anchor for interrupted MarkBridge work.
 It is intentionally biased toward "what is true now" rather than preserving every historical intermediate state.
 
+## Current Planning Anchor
+
+- Active work planning now lives in [docs/31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md).
+- Use that document first when deciding the next task.
+- Treat older plan documents as historical context unless `docs/31-active-work-plan.md` explicitly points to them as active detail.
+
 ## Resume Prep on April 16, 2026
 
 - Reconfirmed current orchestration flow in `src/markbridge/api/service.py`:
@@ -45,17 +51,17 @@ It is intentionally biased toward "what is true now" rather than preserving ever
 
 Read these first when resuming:
 
+- `docs/31-active-work-plan.md`
+- `docs/30-confluence-parsing-guide.md`
 - `docs/24-parsing-policy-and-tuning-guide.md`
-- `docs/17-resume-brief.md`
-- `docs/21-resolution-first-execution-plan.md`
-- `docs/16-processing-and-highlight-flow.md`
-- `docs/15-ui-api-contract.md`
-- `docs/18-downstream-handoff-contract.md`
+- `docs/27-current-parsing-runtime.md`
+- `docs/28-parsing-decision-tree.md`
 
 Important note:
 
 - Some docs still contain older policy snapshots.
-- When docs disagree about downstream canonicalization, trust current code in `src/markbridge/api/service.py` and the newer execution narrative in `docs/17-resume-brief.md` and `docs/21-resolution-first-execution-plan.md`.
+- When docs disagree about work priority, trust `docs/31-active-work-plan.md`.
+- When docs disagree about current parsing runtime behavior, trust current code plus `docs/27-current-parsing-runtime.md`, `docs/28-parsing-decision-tree.md`, and `docs/30-confluence-parsing-guide.md`.
 - In particular, older `dual_track_review` / source-only descriptions are historical, not universally current.
 
 ## Session Decisions So Far

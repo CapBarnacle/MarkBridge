@@ -2,6 +2,12 @@
 
 이 문서는 `.doc` 와 `.hwp` 지원을 실제 작업 단위로 착수하기 위한 실행 계획이다.
 
+상태 메모:
+
+- 이 문서는 DOC/HWP 세부 실행 계획으로 유지한다.
+- 현재 전체 작업 우선순위와 다음 작업 선택은 [31-active-work-plan.md](/home/intak.kim/project/MarkBridge/docs/31-active-work-plan.md)를 기준으로 한다.
+- DOC/HWP 세부 작업이 필요할 때만 이 문서를 참고한다.
+
 핵심 전제:
 
 - `.doc` 와 `.hwp` 는 같은 종류의 작업이 아니다.
