@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0" version="28.0.6">
+  <diagram id="crm-rag-pipeline" name="페이지-1">
+    <mxGraphModel dx="3425" dy="5000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3425" pageHeight="5000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="0" y="0" width="3425" height="3595" as="geometry" />
+        </mxCell>
+
+        <mxCell id="upload" value="파일 업로드" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1590" y="15" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="doc_record" value="DocumentRecord 생성" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1510" y="180" width="410" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="source_path" value="source_local_path 저장" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1480" y="345" width="470" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="source_exists" value="원본 파일 존재?" style="shape=rhombus;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1520" y="515" width="390" height="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="no_label" value="아니오" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="1090" y="980" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="yes_label" value="예" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="1900" y="980" width="70" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="norm_fail" value="normalization failure&lt;br&gt;metadata 저장" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="930" y="1200" width="430" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="detect_format" value="실제 파일 포맷 판별" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1880" y="1220" width="360" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="format_decision" value="파일 포맷" style="shape=rhombus;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1540" y="1420" width="300" height="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fmt_docx" value="DOCX" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="150" y="2640" width="90" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="fmt_xlsx" value="XLSX" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="500" y="2640" width="90" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="fmt_hwpx" value="HWPX" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="930" y="2640" width="90" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="fmt_hwp" value="HWP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="1360" y="2640" width="90" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="fmt_doc" value="DOC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="2190" y="2640" width="90" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="fmt_pdf" value="PDF" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="2830" y="2640" width="90" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="fmt_other" value="기타" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="3320" y="2640" width="90" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="docx_extractor" value="DOCX extractor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="10" y="2850" width="290" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="xlsx_extractor" value="XLSX extractor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="410" y="2850" width="290" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="hwpx_extractor" value="HWPX extractor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="820" y="2850" width="290" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="hwp_extractor" value="HWP extractor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1230" y="2850" width="290" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="doc_bridge" value="DOC bridge/fallback&lt;br&gt;extractor" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1660" y="2860" width="360" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="pdf_tree" value="PDF extractor decision tree" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="2190" y="2860" width="420" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="other_tree" value="unsupported_source_format" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="3120" y="2850" width="290" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="extracted_content" value="ExtractedDocumentContent&lt;br&gt;생성" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1310" y="3130" width="520" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="extract_success" value="추출 성공?" style="shape=rhombus;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1520" y="3355" width="300" height="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="extract_fail_label" value="실패" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="1360" y="3630" width="70" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="extract_success_label" value="성공" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="1930" y="3630" width="70" height="44" as="geometry" />
+        </mxCell>
+
+        <mxCell id="extract_fail" value="extraction failure metadata&lt;br&gt;저장" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1040" y="3805" width="420" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="content_metadata" value="document.content 및&lt;br&gt;metadata 반영" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1860" y="3805" width="420" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="parsed_blocks" value="parsed/parsed_blocks.json&lt;br&gt;생성" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1720" y="4090" width="460" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="parsed_doc_md" value="parsed/document.md 생성" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="540" y="4090" width="430" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="parse_quality" value="parsed/parse_quality.json&lt;br&gt;생성" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1050" y="4090" width="430" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="canonical_blocks" value="parsed/canonical_blocks.json&lt;br&gt;생성" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1480" y="4380" width="470" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="manifest" value="parsed/parsing_manifest.json&lt;br&gt;생성" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="2770" y="4090" width="430" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="export_api" value="Export API: canonical block&lt;br&gt;download" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="2170" y="4380" width="500" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="parse_review" value="Parse Studio review" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f2f2f2;strokeColor=#d0d0d0;" parent="1" vertex="1">
+          <mxGeometry x="1550" y="4700" width="360" height="95" as="geometry" />
+        </mxCell>
+
+        <mxCell id="u1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="upload" target="doc_record" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="doc_record" target="source_path" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="source_path" target="source_exists" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="source_exists" target="norm_fail" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1300" y="990" />
+              <mxPoint x="1300" y="1180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="source_exists" target="detect_format" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1950" y="990" />
+              <mxPoint x="1950" y="1200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="detect_format" target="format_decision" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="u7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="format_decision" target="docx_extractor" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1530" y="2645" />
+              <mxPoint x="155" y="2645" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="format_decision" target="xlsx_extractor" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1530" y="2645" />
+              <mxPoint x="555" y="2645" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="format_decision" target="hwpx_extractor" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1700" y="2645" />
+              <mxPoint x="965" y="2645" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="format_decision" target="hwp_extractor" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1700" y="2645" />
+              <mxPoint x="1405" y="2645" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="format_decision" target="doc_bridge" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1700" y="2645" />
+              <mxPoint x="1840" y="2645" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="format_decision" target="pdf_tree" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1830" y="2645" />
+              <mxPoint x="2400" y="2645" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="format_decision" target="other_tree" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1840" y="2645" />
+              <mxPoint x="3365" y="2645" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="u14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="docx_extractor" target="extracted_content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="xlsx_extractor" target="extracted_content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="hwpx_extractor" target="extracted_content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="hwp_extractor" target="extracted_content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="doc_bridge" target="extracted_content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="pdf_tree" target="extracted_content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="other_tree" target="extracted_content" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="u21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="extracted_content" target="extract_success" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="u22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="extract_success" target="extract_fail" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1400" y="3660" />
+              <mxPoint x="1260" y="3790" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="extract_success" target="content_metadata" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1860" y="3660" />
+              <mxPoint x="2070" y="3790" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="u24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="content_metadata" target="parsed_blocks" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2060" y="3970" />
+              <mxPoint x="1950" y="4070" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="content_metadata" target="parsed_doc_md" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1860" y="3970" />
+              <mxPoint x="760" y="4070" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="content_metadata" target="parse_quality" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1860" y="3970" />
+              <mxPoint x="1260" y="4070" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="content_metadata" target="manifest" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1860" y="3970" />
+              <mxPoint x="2985" y="4070" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="u28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="parsed_blocks" target="canonical_blocks" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1950" y="4315" />
+              <mxPoint x="1715" y="4370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="parsed_blocks" target="export_api" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1950" y="4315" />
+              <mxPoint x="2420" y="4370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="parsed_doc_md" target="parse_review" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="4470" />
+              <mxPoint x="1730" y="4680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="parse_quality" target="parse_review" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1260" y="4470" />
+              <mxPoint x="1730" y="4680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="canonical_blocks" target="parse_review" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1710" y="4530" />
+              <mxPoint x="1730" y="4680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="manifest" target="parse_review" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2985" y="4470" />
+              <mxPoint x="1730" y="4680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="u34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#6f6f6f;" parent="1" source="extract_fail" target="parse_review" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1260" y="3985" />
+              <mxPoint x="1730" y="4680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
